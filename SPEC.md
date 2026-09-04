@@ -173,9 +173,15 @@ DISCLOSURE.md                  pre-existing work + AI assistance statement
    in-enclave, `SEALED_INPUTS_OK` / `INVALID_INPUT` crosses to the DON; simulator reports
    "AWS Nitro in us-west-2". Note: the simulator requires every name in `secrets.yaml` to
    resolve, so that file grows per task rather than being declared up front.)
-3. **No-leak tests first**: (a) neither reserve appears in any non-enclave log line or return
+3. ✅ **No-leak tests first**: (a) neither reserve appears in any non-enclave log line or return
    value; (b) `NO_OVERLAP` output is byte-identical regardless of how far apart the bands
    are. Both must FAIL against a deliberately leaky stub, then pass.
+   (Done 2026-09-04. `noleak.ts` holds the checkers; the handler is `runSealedBid(runtime, seal)`
+   so the suite runs the identical output path against two deliberately leaky seals as
+   permanent NEGATIVE CONTROLS — `leakySealReturnsReserve` and `leakySealRevealsGap` — and asserts
+   the checkers catch them on every run. Checks cover logs, the return string, decoded report
+   string fields, and the uint report field. `sealBids` is a validated placeholder returning
+   `NO_OVERLAP`; Task 4 replaces one marked line and must keep this suite green.)
 4. Overlap logic + attestation per §2.1–2.2, entirely inside the `handlerInTee` handler. Unit tests: overlap / no-overlap / equal /
    single-point / invalid input.
 5. `bo_client.py` + `scripts/skucheck.py`; real paid calls against the live API; record

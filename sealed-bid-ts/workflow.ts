@@ -4,7 +4,7 @@ import { z } from 'zod'
 
 // ─── Config ────────────────────────────────────────────────────────────────
 // Nothing in the config is secret. The reserve prices are Vault secrets and are
-// only ever materialised inside the enclave (see `onCronTrigger`).
+// only ever materialised inside the enclave (see `runSealedBid`).
 export const configSchema = z.object({
 	schedule: z.string(),
 	reserveSecretIdA: z.string(),
@@ -13,17 +13,20 @@ export const configSchema = z.object({
 })
 export type Config = z.infer<typeof configSchema>
 
-// ─── Outcomes ──────────────────────────────────────────────────────────────
-// The full protocol (SPEC.md §2.1) returns SETTLE / NO_OVERLAP / INVALID_INPUT.
-// Task 2 (this commit) is the skeleton: it proves both reserve prices can be
-// read inside the TEE handler in ONE getSecrets call and validated there, and
-// that a non-sensitive status can cross back to the DON. The overlap maths is
-// Task 4 and is deliberately not here yet — the no-leak tests (Task 3) land first.
-export type Outcome = 'SEALED_INPUTS_OK' | 'INVALID_INPUT'
+// ─── Enclave outcome ───────────────────────────────────────────────────────
+// This is the ONLY thing allowed to leave the enclave (SPEC.md §2.1 output
+// contract). `clearingPrice` is present iff result === 'SETTLE'. Nothing else —
+// no reserve, no gap, no ordering hint — may be attached to this object.
+export type Result = 'SETTLE' | 'NO_OVERLAP' | 'INVALID_INPUT'
+export type EnclaveOutcome = { result: Result; clearingPrice?: number }
+
+/** Fixed-point encoding of a price for the on-chain report (6 decimals, USDC-style). */
+export const PRICE_SCALE = 1_000_000
+export const toMicro = (price: number): bigint => BigInt(Math.round(price * PRICE_SCALE))
 
 /**
  * Parse a reserve price that arrived from the Vault. Runs inside the enclave.
- * Returns null on anything that is not a finite, strictly positive number.
+ * Returns null on anything that is not a finite, strictly positive decimal.
  * Never throws with the raw value in the message — a thrown error can leave
  * the enclave as a log line.
  */
@@ -36,17 +39,33 @@ export const parseReserve = (raw: string | undefined): number | null => {
 }
 
 /**
- * Skeleton validation step. Task 4 replaces this with the band-overlap
- * computation (SPEC.md §2.1) and the attestation record (§2.2).
+ * The sealing function: (buyer max, seller min) → outcome. Pure, deterministic,
+ * runs inside the enclave.
+ *
+ * Task 3 state: placeholder. Both inputs are validated; the band-overlap
+ * computation of SPEC.md §2.1 is Task 4 and replaces the marked line. The
+ * no-leak tests in workflow.test.ts constrain what any future version may emit.
  */
-export const validateInputs = (a: number | null, b: number | null): Outcome =>
-	a !== null && b !== null ? 'SEALED_INPUTS_OK' : 'INVALID_INPUT'
+export type SealFn = (buyerMax: number | null, sellerMin: number | null) => EnclaveOutcome
+export const sealBids: SealFn = (buyerMax, sellerMin) => {
+	if (buyerMax === null || sellerMin === null) return { result: 'INVALID_INPUT' }
+	// Task 4 replaces this line with: overlap iff sellerMin <= buyerMax; midpoint clears.
+	return { result: 'NO_OVERLAP' }
+}
+
+/** Human-readable rendering of an outcome. The only string form the enclave returns. */
+export const renderOutcome = (o: EnclaveOutcome): string =>
+	o.result === 'SETTLE' ? `SETTLE @ ${o.clearingPrice}` : o.result
 
 // ─── TEE handler ───────────────────────────────────────────────────────────
 // Receives a `TeeRuntime`. Everything here runs inside the enclave until we
 // explicitly cross back with `usingTheDons()`. The only things that cross are
-// the outcome string and the run label — never a reserve price.
-export const onCronTrigger = (runtime: TeeRuntime<Config>): string => {
+// derived from `EnclaveOutcome` — never a reserve price.
+//
+// `seal` is injectable so the test suite can run the identical output path
+// against deliberately leaky sealing functions and prove the no-leak checks
+// catch them. Production always uses `sealBids`.
+export const runSealedBid = (runtime: TeeRuntime<Config>, seal: SealFn = sealBids): string => {
 	const config = runtime.config
 
 	// ONE getSecrets call for the whole execution (measured runtime limit:
@@ -55,20 +74,20 @@ export const onCronTrigger = (runtime: TeeRuntime<Config>): string => {
 		.getSecrets([{ id: config.reserveSecretIdA }, { id: config.reserveSecretIdB }])
 		.result()
 
-	const reserveA = parseReserve(secrets[config.reserveSecretIdA]?.value)
-	const reserveB = parseReserve(secrets[config.reserveSecretIdB]?.value)
+	const buyerMax = parseReserve(secrets[config.reserveSecretIdA]?.value)
+	const sellerMin = parseReserve(secrets[config.reserveSecretIdB]?.value)
 
-	const outcome = validateInputs(reserveA, reserveB)
+	const outcome = seal(buyerMax, sellerMin)
 
-	// Log lines may leave the enclave in simulation. Status only.
-	runtime.log(`enclave: inputs=${outcome === 'SEALED_INPUTS_OK' ? 'both-valid' : 'invalid'} outcome=${outcome}`)
+	// Log lines may leave the enclave in simulation. Outcome only.
+	runtime.log(`enclave: outcome=${outcome.result}`)
 
 	// Cross back to the DON with a report carrying only the outcome.
 	const donRuntime = runtime.usingTheDons()
-	const encodedPayload = encodeAbiParameters(parseAbiParameters('string outcome, string runLabel'), [
-		outcome,
-		config.runLabel,
-	])
+	const encodedPayload = encodeAbiParameters(
+		parseAbiParameters('string result, uint256 clearingPriceMicro, string runLabel'),
+		[outcome.result, outcome.clearingPrice !== undefined ? toMicro(outcome.clearingPrice) : 0n, config.runLabel],
+	)
 	donRuntime
 		.report({
 			encodedPayload: hexToBase64(encodedPayload),
@@ -78,8 +97,10 @@ export const onCronTrigger = (runtime: TeeRuntime<Config>): string => {
 		})
 		.result()
 
-	return `${outcome} (run: ${config.runLabel})`
+	return `${renderOutcome(outcome)} (run: ${config.runLabel})`
 }
+
+export const onCronTrigger = (runtime: TeeRuntime<Config>): string => runSealedBid(runtime)
 
 export function initWorkflow(config: Config) {
 	const cronTrigger = new cre.capabilities.CronCapability()
