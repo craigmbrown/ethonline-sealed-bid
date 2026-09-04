@@ -99,6 +99,43 @@ run_evidence: [ {step_id, ts, prev_sha256, hmac, ...}, ... ]   # hash-chained, H
 The HMAC key is a Vault secret; the chain makes the evidence tamper-evident (not
 identity-proving — the pubkey travels in the record).
 
+## 2.5 Prize qualification — Chainlink "Best Confidential Workflow" ($2,000; up to 2 teams × $1,000)
+
+Read from `ethglobal.com/events/ethonline2026/prizes/chainlink` on 2026-09-04 (published; was
+"Coming soon" on 09-02). Requirements, verbatim:
+
+1. "Build a CRE Workflow that uses the Confidential Workflows to execute a meaningful part of
+   the application."
+2. "The workflow must register and use a confidential TEE handler, such as `handlerInTee` in
+   TypeScript or `cre.HandlerInTee` in Go."
+3. "The confidential portion of the workflow must process at least one sensitive input, secret,
+   confidential API response, private parameter, or intermediate value inside the enclave."
+4. "The Confidential Workflow must be meaningfully integrated into the project's core
+   functionality. A placeholder handler or an isolated example that does not contribute to the
+   application will not qualify."
+5. "Demonstrate a successful execution through either: A Confidential Workflow simulation using
+   the CRE CLI or a live deployment on the CRE network."
+6. "Provide evidence of the successful simulation or deployment in the submission, such as a
+   demo video, terminal output, execution logs, or deployment details."
+
+**Design consequences (binding):**
+
+- `sealed-bid-ts/main.ts` MUST register the overlap computation with **`handlerInTee`** — the
+  sealing (§2.1) and the attestation (§2.2) run inside that handler, nothing else does the
+  maths. This is the line a judge greps for.
+- The enclave processes **two** sensitive inputs (both reserve prices, read via `getSecrets`
+  inside the handler) and produces a sensitive **intermediate value** (the overlap) that never
+  leaves. Req. 3 is satisfied three ways over; say so in the README.
+- **Simulation is sufficient.** `cre workflow simulate` output is a first-class deliverable —
+  capture the terminal output of a `SETTLE` run and a `NO_OVERLAP` run into `EVIDENCE.md`
+  verbatim, plus the video. Live deploy (Phase 3) is a bonus, not a requirement.
+- General ETHGlobal submission norms: public repo, working demo, video 2–5 minutes.
+
+Other Chainlink prizes: "Best Chainlink-Powered Upgrade" ($500) is Continuity-track only — out
+of scope. "Automated Liquidation Protection Challenge" ($500) was still "Coming soon" on 09-04
+(details via Discord `#partner-chainlink`) — re-check on Sep 7; not pursued unless it costs
+nothing beyond Phase 2.
+
 ## 3. Measured constraints of the runtime (design inputs, not guesses)
 
 - `getSecrets`: **one call per execution, ≤ 9 ids**. A second call fails; 10+ ids fail.
@@ -130,12 +167,12 @@ DISCLOSURE.md                  pre-existing work + AI assistance statement
 ## 5. Tasks (one commit each, in order)
 
 1. ✅ Init repo: LICENSE, README, DISCLOSURE, CLAUDE.md, SPEC, .gitignore, .env.sample
-2. CRE skeleton: scaffold from the hello-confidential template shape; `project.yaml` on
-   Base Sepolia; `cre workflow simulate` returns a result.
+2. CRE skeleton: scaffold from the hello-confidential template shape with a registered
+   `handlerInTee`; `project.yaml` on Base Sepolia; `cre workflow simulate` returns a result.
 3. **No-leak tests first**: (a) neither reserve appears in any non-enclave log line or return
    value; (b) `NO_OVERLAP` output is byte-identical regardless of how far apart the bands
    are. Both must FAIL against a deliberately leaky stub, then pass.
-4. Overlap logic + attestation per §2.1–2.2. Unit tests: overlap / no-overlap / equal /
+4. Overlap logic + attestation per §2.1–2.2, entirely inside the `handlerInTee` handler. Unit tests: overlap / no-overlap / equal /
    single-point / invalid input.
 5. `bo_client.py` + `scripts/skucheck.py`; real paid calls against the live API; record
    settlement evidence (tx hashes) in `EVIDENCE.md`.
