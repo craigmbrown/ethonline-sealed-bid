@@ -13,7 +13,7 @@ outside this one.
 3. **BlindOracle is a public HTTP API, nothing more.** Call it at
    `https://api.craigmbrown.com`. Never vendor a client library that is not on PyPI, and
    never reference how it is implemented server-side.
-4. **Secrets never enter the repo.** `.env` is gitignored; `.env.example` holds placeholders
+4. **Secrets never enter the repo.** `.env` is gitignored; `.env.sample` holds placeholders
    only. Before every commit, grep the diff for keys, tokens and private keys.
 5. **Reserve prices are secret by design.** No log line, return value, test fixture output,
    or dispute payload may contain a party's reserve price outside the enclave. The no-leak

@@ -1,0 +1,20 @@
+# secrets — never committed
+.env
+.env.*
+!.env.sample
+*.pem
+*.key
+secrets.local.yaml
+
+# toolchain
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+dist/
+.cre/
+*.wasm
+
+# local scratch
+.DS_Store
+*.log
