@@ -1,0 +1,28 @@
+# CRE project settings.
+#
+# Settlement chain is Base Sepolia (chain-name `ethereum-testnet-sepolia-base-1`,
+# forwarder 0xF8344CFd5c43616a4366C34E3EEE75af79a74482 per `cre workflow supported-chains`).
+# Ethereum mainnet is listed only because the CRE workflow registry lives there — a
+# `cre workflow deploy` (Phase 3, optional) writes to it. Simulation never touches mainnet.
+staging-settings:
+  account:
+    workflow-owner-address: '0x2D0B6cd9485e59a6eDc10B048227FAF0e81D174D'
+  rpcs:
+    - chain-name: ethereum-testnet-sepolia-base-1
+      url: https://sepolia.base.org
+    - chain-name: ethereum-mainnet
+      url: https://ethereum-rpc.publicnode.com
+
+production-settings:
+  rpcs:
+    - chain-name: ethereum-testnet-sepolia-base-1
+      url: https://sepolia.base.org
+    - chain-name: ethereum-mainnet
+      url: https://ethereum-rpc.publicnode.com
+
+# Private registry target: 3 free slots, no gas. Use during Phases 1–2; go onchain
+# (staging-settings) only for the final submission if at all.
+private-settings:
+  rpcs:
+    - chain-name: ethereum-testnet-sepolia-base-1
+      url: https://sepolia.base.org

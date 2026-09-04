@@ -18,3 +18,7 @@ dist/
 # local scratch
 .DS_Store
 *.log
+
+# CRE compile artifacts
+.cre_build_tmp.js
+*.wasm.br.b64

@@ -1,0 +1,22 @@
+staging-settings:
+  user-workflow:
+    workflow-name: sealed-bid-staging
+  workflow-artifacts:
+    workflow-path: ./main.ts
+    config-path: ./config.staging.json
+    secrets-path: ../secrets.yaml
+production-settings:
+  user-workflow:
+    workflow-name: sealed-bid-production
+  workflow-artifacts:
+    workflow-path: ./main.ts
+    config-path: ./config.production.json
+    secrets-path: ../secrets.yaml
+private-settings:
+  user-workflow:
+    workflow-name: sealed-bid-private
+    deployment-registry: private
+  workflow-artifacts:
+    workflow-path: ./main.ts
+    config-path: ./config.staging.json
+    secrets-path: ../secrets.yaml

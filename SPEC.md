@@ -167,8 +167,12 @@ DISCLOSURE.md                  pre-existing work + AI assistance statement
 ## 5. Tasks (one commit each, in order)
 
 1. ✅ Init repo: LICENSE, README, DISCLOSURE, CLAUDE.md, SPEC, .gitignore, .env.sample
-2. CRE skeleton: scaffold from the hello-confidential template shape with a registered
+2. ✅ CRE skeleton: scaffold from the hello-confidential template shape with a registered
    `handlerInTee`; `project.yaml` on Base Sepolia; `cre workflow simulate` returns a result.
+   (Done 2026-09-04: both reserves read in ONE `getSecrets` call inside the handler, validated
+   in-enclave, `SEALED_INPUTS_OK` / `INVALID_INPUT` crosses to the DON; simulator reports
+   "AWS Nitro in us-west-2". Note: the simulator requires every name in `secrets.yaml` to
+   resolve, so that file grows per task rather than being declared up front.)
 3. **No-leak tests first**: (a) neither reserve appears in any non-enclave log line or return
    value; (b) `NO_OVERLAP` output is byte-identical regardless of how far apart the bands
    are. Both must FAIL against a deliberately leaky stub, then pass.
