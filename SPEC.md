@@ -182,8 +182,18 @@ DISCLOSURE.md                  pre-existing work + AI assistance statement
    the checkers catch them on every run. Checks cover logs, the return string, decoded report
    string fields, and the uint report field. `sealBids` is a validated placeholder returning
    `NO_OVERLAP`; Task 4 replaces one marked line and must keep this suite green.)
-4. Overlap logic + attestation per §2.1–2.2, entirely inside the `handlerInTee` handler. Unit tests: overlap / no-overlap / equal /
-   single-point / invalid input.
+4. ✅ Overlap logic + attestation per §2.1–2.2, entirely inside the `handlerInTee` handler.
+   Unit tests: overlap / no-overlap / equal / single-point / invalid input.
+   (Done 2026-09-04. `sealBids`: overlap iff `sellerMin <= buyerMax`, midpoint clears. Commitments
+   `sha256(utf8("<reserve>|<salt>"))` with the salts as Vault secrets (4 ids in the one `getSecrets`
+   call); report ABI `(string result, uint256 clearingPriceMicro, string runLabel, bytes32
+   commitmentA, bytes32 commitmentB, bytes32 runId)`. **Deviation from §2.2:** `executed_at` is
+   not emitted — a wall-clock value is non-deterministic across DON nodes and would break both
+   consensus and the byte-identity property; the settlement tx's block timestamp serves. The
+   no-leak rule was sharpened to "output ⊆ f(inputs)": on SETTLE the clearing price must be the
+   protocol midpoint, and a reserve may appear only as that clearing price (equal bands
+   necessarily settle at the shared value). 27/27 tests; all three paths captured in
+   `EVIDENCE.md`.)
 5. `bo_client.py` + `scripts/skucheck.py`; real paid calls against the live API; record
    settlement evidence (tx hashes) in `EVIDENCE.md`.
 6. Settlement receiver on Base Sepolia; `SETTLE` writes on chain, `NO_OVERLAP` writes nothing.

@@ -1,25 +1,34 @@
 import { describe, expect } from 'bun:test'
 import type { TeeRuntime } from '@chainlink/cre-sdk'
 import { test } from '@chainlink/cre-sdk/test'
-import { assertIdenticalRuns, assertNoReserveLeak, decodeReports, type CapturedRun } from './noleak'
+import { assertIdenticalRuns, assertNoReserveLeak, decodeReports, numericTokens, type CapturedRun } from './noleak'
 import {
 	type Config,
 	type EnclaveOutcome,
 	type SealFn,
+	ZERO32,
+	commit,
 	initWorkflow,
 	onCronTrigger,
 	parseReserve,
 	renderOutcome,
+	runIdFor,
 	runSealedBid,
 	sealBids,
+	toMicro,
 } from './workflow'
 
 const makeConfig = (): Config => ({
 	schedule: '0 */1 * * * *',
 	reserveSecretIdA: 'RESERVE_PRICE_AGENT_A',
 	reserveSecretIdB: 'RESERVE_PRICE_AGENT_B',
+	saltSecretIdA: 'COMMITMENT_SALT_A',
+	saltSecretIdB: 'COMMITMENT_SALT_B',
 	runLabel: 'test',
 })
+
+const SALT_A = 'salt-a-0f3c9e'
+const SALT_B = 'salt-b-77d1a2'
 
 type Secrets = Record<string, string | undefined>
 
@@ -53,8 +62,18 @@ const makeFakeTeeRuntime = (secrets: Secrets) => {
 }
 
 /** Run the handler and capture every emitted channel. */
-const capture = (a: string | undefined, b: string | undefined, seal: SealFn = sealBids): CapturedRun => {
-	const fake = makeFakeTeeRuntime({ RESERVE_PRICE_AGENT_A: a, RESERVE_PRICE_AGENT_B: b })
+const capture = (
+	a: string | undefined,
+	b: string | undefined,
+	seal: SealFn = sealBids,
+	salts: { a?: string; b?: string } = { a: SALT_A, b: SALT_B },
+): CapturedRun => {
+	const fake = makeFakeTeeRuntime({
+		RESERVE_PRICE_AGENT_A: a,
+		RESERVE_PRICE_AGENT_B: b,
+		COMMITMENT_SALT_A: salts.a,
+		COMMITMENT_SALT_B: salts.b,
+	})
 	const returned = runSealedBid(fake.runtime, seal)
 	return { logs: fake.logs, returned, reportPayloadsB64: fake.reportPayloadsB64 }
 }
@@ -85,13 +104,44 @@ describe('parseReserve', () => {
 	})
 })
 
-describe('sealBids (Task 3 placeholder — Task 4 adds the overlap maths)', () => {
+describe('sealBids — SPEC §2.1', () => {
+	test('overlap: seller min below buyer max → SETTLE at the midpoint', () => {
+		expect(sealBids(120, 90)).toEqual({ result: 'SETTLE', clearingPrice: 105 })
+		expect(sealBids(731.25, 412.5)).toEqual({ result: 'SETTLE', clearingPrice: 571.875 })
+	})
+	test('no overlap: seller min above buyer max → NO_OVERLAP with no clearing price', () => {
+		expect(sealBids(90, 120)).toEqual({ result: 'NO_OVERLAP' })
+		expect(sealBids(1, 1_000_000)).toEqual({ result: 'NO_OVERLAP' })
+	})
+	test('equal bands → SETTLE at that price', () => {
+		expect(sealBids(50, 50)).toEqual({ result: 'SETTLE', clearingPrice: 50 })
+	})
+	test('single-point overlap (one micro-unit apart) → SETTLE at the midpoint', () => {
+		expect(sealBids(100.000001, 100)).toEqual({ result: 'SETTLE', clearingPrice: 100.0000005 })
+	})
 	test('either input invalid → INVALID_INPUT with no clearing price', () => {
 		expect(sealBids(null, 90)).toEqual({ result: 'INVALID_INPUT' })
 		expect(sealBids(120, null)).toEqual({ result: 'INVALID_INPUT' })
 	})
-	test('NO_OVERLAP carries no clearing price', () => {
-		expect(sealBids(120, 90)).toEqual({ result: 'NO_OVERLAP' })
+})
+
+describe('commitments — SPEC §2.2', () => {
+	test('deterministic for the same (reserve, salt)', () => {
+		expect(commit(120, SALT_A)).toBe(commit(120, SALT_A))
+	})
+	test('hiding: a different salt or a different reserve changes the commitment', () => {
+		expect(commit(120, SALT_A)).not.toBe(commit(120, SALT_B))
+		expect(commit(120, SALT_A)).not.toBe(commit(121, SALT_A))
+	})
+	test('a commitment does not contain the reserve as a numeric token', () => {
+		for (const r of [120, 731.25, 50]) expect(numericTokens(commit(r, SALT_A))).toEqual([])
+	})
+	test('runId is a function of both commitments and the label', () => {
+		const ca = commit(120, SALT_A)
+		const cb = commit(90, SALT_B)
+		expect(runIdFor(ca, cb, 'x')).toBe(runIdFor(ca, cb, 'x'))
+		expect(runIdFor(ca, cb, 'x')).not.toBe(runIdFor(cb, ca, 'x'))
+		expect(runIdFor(ca, cb, 'x')).not.toBe(runIdFor(ca, cb, 'y'))
 	})
 })
 
@@ -104,22 +154,47 @@ describe('renderOutcome', () => {
 })
 
 describe('handler plumbing', () => {
-	test('reads both reserve prices in ONE getSecrets call', () => {
-		const fake = makeFakeTeeRuntime({ RESERVE_PRICE_AGENT_A: '120', RESERVE_PRICE_AGENT_B: '90' })
+	test('reads both reserves and both salts in ONE getSecrets call', () => {
+		const fake = makeFakeTeeRuntime({
+			RESERVE_PRICE_AGENT_A: '120',
+			RESERVE_PRICE_AGENT_B: '90',
+			COMMITMENT_SALT_A: SALT_A,
+			COMMITMENT_SALT_B: SALT_B,
+		})
 		onCronTrigger(fake.runtime)
-		expect(fake.secretCalls).toEqual([2])
+		expect(fake.secretCalls).toEqual([4])
 	})
-	test('INVALID_INPUT when a reserve is missing or malformed', () => {
+	test('INVALID_INPUT when a reserve is missing or malformed, or a salt is missing', () => {
 		expect(capture('120', undefined).returned).toContain('INVALID_INPUT')
 		expect(capture('120', 'abc').returned).toContain('INVALID_INPUT')
+		expect(capture('120', '90', sealBids, { a: SALT_A }).returned).toContain('INVALID_INPUT')
 	})
-	test('crosses back to the DON with exactly one evm report carrying result + runLabel', () => {
-		const run = capture('120', '90')
-		const reports = decodeReports(run)
-		expect(reports).toHaveLength(1)
-		expect(reports[0].result).toBe('NO_OVERLAP')
-		expect(reports[0].runLabel).toBe('test')
-		expect(reports[0].clearingPriceMicro).toBe(0n)
+	test('SETTLE report: midpoint in micro-units, both commitments, runId', () => {
+		const [rep] = decodeReports(capture('120', '90'))
+		expect(rep.result).toBe('SETTLE')
+		expect(rep.clearingPriceMicro).toBe(toMicro(105))
+		expect(rep.runLabel).toBe('test')
+		expect(rep.commitmentA).toBe(commit(120, SALT_A))
+		expect(rep.commitmentB).toBe(commit(90, SALT_B))
+		expect(rep.runId).toBe(runIdFor(rep.commitmentA, rep.commitmentB, 'test'))
+	})
+	test('NO_OVERLAP report: zero clearing price, commitments still present', () => {
+		const [rep] = decodeReports(capture('90', '120'))
+		expect(rep.result).toBe('NO_OVERLAP')
+		expect(rep.clearingPriceMicro).toBe(0n)
+		expect(rep.commitmentA).toBe(commit(90, SALT_A))
+		expect(rep.commitmentB).toBe(commit(120, SALT_B))
+	})
+	test('INVALID_INPUT report: zero clearing price and zero commitments (nothing partial leaves)', () => {
+		const [rep] = decodeReports(capture('120', 'abc'))
+		expect(rep.result).toBe('INVALID_INPUT')
+		expect(rep.clearingPriceMicro).toBe(0n)
+		expect(rep.commitmentA).toBe(ZERO32)
+		expect(rep.commitmentB).toBe(ZERO32)
+	})
+	test('simulate-shaped return strings', () => {
+		expect(capture('120', '90').returned).toBe('SETTLE @ 105 (run: test)')
+		expect(capture('90', '120').returned).toBe('NO_OVERLAP (run: test)')
 	})
 })
 
@@ -128,16 +203,17 @@ describe('handler plumbing', () => {
 // ═══════════════════════════════════════════════════════════════════════════
 
 const RESERVE_PAIRS: Array<[string, string]> = [
-	['120', '90'],
-	['90', '120'],
-	['731.25', '412.5'],
-	['412.5', '731.25'],
-	['1', '1000000'],
-	['50', '50'],
-	['0.000001', '999999.999999'],
+	['120', '90'], // SETTLE @ 105
+	['90', '120'], // NO_OVERLAP
+	['731.25', '412.5'], // SETTLE @ 571.875
+	['412.5', '731.25'], // NO_OVERLAP
+	['1', '1000000'], // NO_OVERLAP
+	['1000000', '1'], // SETTLE @ 500000.5
+	['50', '50'], // SETTLE @ 50 — equal bands: the clearing price IS the shared reserve
+	['0.000001', '999999.999999'], // NO_OVERLAP
 ]
 
-describe('no-leak (a): a reserve price never appears in any non-enclave output', () => {
+describe('no-leak (a): a reserve price never appears outside what the protocol implies', () => {
 	test('production seal: no reserve in logs, return value, or decoded report fields', () => {
 		for (const [a, b] of RESERVE_PAIRS) {
 			expect(() => assertNoReserveLeak(capture(a, b), [a, b])).not.toThrow()
@@ -149,21 +225,35 @@ describe('no-leak (a): a reserve price never appears in any non-enclave output',
 		for (const line of [...run.logs, run.returned]) expect(line).not.toContain(junk)
 	})
 	test('NEGATIVE CONTROL: a seal that uses a reserve as the clearing price is caught', () => {
-		for (const [a, b] of RESERVE_PAIRS) {
+		// Equal bands are excluded: there the midpoint equals both reserves by
+		// construction, so this particular leak is indistinguishable from the
+		// correct answer — which is exactly the trade-off SPEC §2.1 documents.
+		for (const [a, b] of RESERVE_PAIRS.filter(([x, y]) => x !== y)) {
 			expect(() => assertNoReserveLeak(capture(a, b, leakySealReturnsReserve), [a, b])).toThrow(/leaked/)
 		}
+	})
+	test('NEGATIVE CONTROL: a SETTLE at a non-midpoint price is caught even when it names neither reserve', () => {
+		const offMidpoint: SealFn = () => ({ result: 'SETTLE', clearingPrice: 104 })
+		expect(() => assertNoReserveLeak(capture('120', '90', offMidpoint), ['120', '90'])).toThrow(/midpoint/)
 	})
 })
 
 describe('no-leak (b): NO_OVERLAP reveals nothing about ordering or distance', () => {
 	const near = capture('100', '101')
 	const far = capture('1', '1000000')
-	const reversed = capture('1000000', '1')
+	const reversedFar = capture('0.5', '999999')
 
-	test('production seal: near / far / reversed non-overlapping pairs are byte-identical', () => {
+	test('production seal: near / far / reversed non-overlapping pairs are identical outside the commitments', () => {
 		expect(() => assertIdenticalRuns(near, far)).not.toThrow()
-		expect(() => assertIdenticalRuns(near, reversed)).not.toThrow()
+		expect(() => assertIdenticalRuns(near, reversedFar)).not.toThrow()
 		expect(decodeReports(near)[0].result).toBe('NO_OVERLAP')
+	})
+	test('production seal: the commitments themselves carry no numeric token of either reserve', () => {
+		for (const run of [near, far, reversedFar]) {
+			const [rep] = decodeReports(run)
+			expect(numericTokens(rep.commitmentA)).toEqual([])
+			expect(numericTokens(rep.commitmentB)).toEqual([])
+		}
 	})
 	test('NEGATIVE CONTROL: a seal that leaks the gap through the report is caught', () => {
 		const leakyNear = capture('100', '101', leakySealRevealsGap)

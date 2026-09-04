@@ -2,5 +2,7 @@
   "schedule": "0 */5 * * * *",
   "reserveSecretIdA": "RESERVE_PRICE_AGENT_A",
   "reserveSecretIdB": "RESERVE_PRICE_AGENT_B",
+  "saltSecretIdA": "COMMITMENT_SALT_A",
+  "saltSecretIdB": "COMMITMENT_SALT_B",
   "runLabel": "production"
 }
