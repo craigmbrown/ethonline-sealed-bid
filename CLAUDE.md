@@ -18,8 +18,11 @@ outside this one.
 5. **Reserve prices are secret by design.** No log line, return value, test fixture output,
    or dispute payload may contain a party's reserve price outside the enclave. The no-leak
    tests in `sealed-bid-ts/main.test.ts` are the load-bearing tests; keep them passing.
-6. **Commit small and often** — one commit per task, descriptive message, never squash.
-   The commit history is part of the submission.
+6. **Commit small and often** — descriptive messages, never squash. The commit history is
+   part of the submission. From Task 5 on, each task is a branch (`task-N-<slug>`) with
+   at least two commits, merged to `main` through a pull request **with a merge commit**
+   (never squash: that would collapse the history into the single dump the rules
+   presume unqualified). Tasks 1–4 and 6 were committed directly to `main` on days 1–2.
 7. **Real-money actions** (mainnet gas, paid BlindOracle calls above $1, the ETHGlobal
    stake) are done by the human operator, not by an agent. Ask first.
 
