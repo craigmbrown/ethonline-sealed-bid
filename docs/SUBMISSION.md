@@ -67,7 +67,9 @@ we state it rather than hide it.
 - Receivers on Base Sepolia: production `0xaDF984468f5C7DEeb82FA4c98f25CA3952921ce7`, simulation `0xA2eB7d6EEd6a4d0976cb29B226093E007E720590`
 - Settlement tx: https://sepolia.basescan.org/tx/0x3d241f2b75f53b1e81761991f7e3b6160e2ea6d9a70c31eda2f588cad8521735
 - A → B transfer: https://sepolia.basescan.org/tx/0x1389bfac88595dddb297c800dc1fafc9d160811466f36ad4de23a41340de9c49
-- Video: _(add the URL when recorded — script in `docs/VIDEO-SCRIPT.md`)_
+- Video (108 s, captioned terminal recording of the real run): https://github.com/craigmbrown/ethonline-sealed-bid/releases/download/demo-2026-09-05/demo.mp4
+  — release page https://github.com/craigmbrown/ethonline-sealed-bid/releases/tag/demo-2026-09-05; source cast `evidence/demo.cast`,
+  regenerate with `scripts/render_cast.py`. A narrated screen recording per `docs/VIDEO-SCRIPT.md` can replace it before submission.
 
 ## Chainlink prize checklist (from the track page, read 2026-09-04)
 | Requirement | Where |
