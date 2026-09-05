@@ -64,10 +64,62 @@ def test_evidence_chain_verifies_and_detects_tampering():
 
 
 def test_chain_records_carry_the_step_shape_the_attestation_expects():
+    """RAP-1 §7 wire format. The field is `signature`, not `hmac`, and only records
+    AFTER the first carry `prev_sha256` — a first record structurally has no
+    predecessor to link to."""
     ch = demo.EvidenceChain("s", "r")
-    rec = ch.append("bracket_open", actor="a")
-    for k in ("step_id", "ts", "prev_sha256", "hmac", "pubkey", "sig_scheme"):
-        assert k in rec
+    first = ch.append("bracket_open", actor="a")
+    second = ch.append("seal", outcome="SETTLE")
+    for k in ("step_id", "ts", "signature", "sig_scheme", "pubkey"):
+        assert k in first and k in second
+    assert "prev_sha256" not in first
+    assert "prev_sha256" in second
+    assert "hmac" not in first, "the pre-RAP-1 field name must not come back"
+
+
+def test_scheme_is_ed25519_when_a_key_is_configured(monkeypatch):
+    """Adopted 2026-09-05: with a key, evidence is attributable, not merely
+    tamper-evident. Uses the RFC 8032 test seed, not the production key."""
+    pytest.importorskip("cryptography")
+    seed = "9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bcc7cae0d8d0a"
+    monkeypatch.setenv("EVIDENCE_ED25519_PRIVATE_KEY", seed)
+    monkeypatch.setattr(demo, "published_signing_pubkey", lambda: None)
+    ch = demo.EvidenceChain("s", "r")
+    assert ch.scheme == "ed25519"
+    ch.append("bracket_open", actor="a")
+    ch.append("seal", outcome="SETTLE")
+    assert demo.EvidenceChain.verify(ch.records)
+    assert all(r["sig_scheme"] == "ed25519" for r in ch.records)
+    tampered = json.loads(json.dumps(ch.records))
+    tampered[1]["outcome"] = "NO_OVERLAP"
+    assert not demo.EvidenceChain.verify(tampered)
+
+
+def test_falls_back_to_hmac_without_a_key(monkeypatch):
+    monkeypatch.delenv("EVIDENCE_ED25519_PRIVATE_KEY", raising=False)
+    ch = demo.EvidenceChain("s", "r")
+    assert ch.scheme == "hmac-sha256"
+    ch.append("bracket_open", actor="a")
+    assert demo.EvidenceChain.verify(ch.records)
+
+
+def test_unusable_key_is_a_hard_exit_never_a_silent_downgrade(monkeypatch):
+    """A run that believes it is attributable and is not would misrepresent its own
+    evidence. Refusing to start is the only safe behaviour."""
+    monkeypatch.setenv("EVIDENCE_ED25519_PRIVATE_KEY", "not-hex")
+    with pytest.raises(SystemExit):
+        demo.EvidenceChain("s", "r")
+
+
+def test_key_mismatching_the_published_pubkey_is_refused(monkeypatch):
+    """A verifier told to expect the published key would reject the bundle, so the
+    run must not produce one."""
+    pytest.importorskip("cryptography")
+    monkeypatch.setenv("EVIDENCE_ED25519_PRIVATE_KEY",
+                       "9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bcc7cae0d8d0a")
+    monkeypatch.setattr(demo, "published_signing_pubkey", lambda: "de" * 32)
+    with pytest.raises(SystemExit):
+        demo.EvidenceChain("s", "r")
 
 
 def test_step_ids_match_spec_declared_process():
