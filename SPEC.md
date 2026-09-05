@@ -224,8 +224,18 @@ DISCLOSURE.md                  pre-existing work + AI assistance statement
    receiver records the price the agents are bound to; it does not custody funds.)
 7. Security review before each push: no secrets, no private-repo references, real history.
 8. *(optional)* Dispute routing + process attestation per §2.4.
+   (Partially done 2026-09-05. Process attestation is bought by `scripts/demo.py --attest` over the
+   hash-chained, HMAC-signed evidence records; the service returned `non_conformant` — A1 steps
+   present, A2 order and A4 timeline **pass**, A6 chain linkage **fail**, A7 signatures
+   **unverifiable** — because the record format it verifies for A6/A7 is not published to callers.
+   Recorded as-is in `EVIDENCE.md`; not retried by guessing. Dispute routing is built and tested
+   (`bo_client.dispute`, evidence rule enforced, $5 opt-in) but not exercised: a real dispute costs
+   5 USDC on mainnet and there is no contested outcome to adjudicate.)
 9. Submission: README architecture diagram, 3-minute video recorded while `skucheck` is
    green, submit before **2026-09-13 16:00 UTC**.
+   (Driver + diagram done 2026-09-05: `scripts/demo.py` runs the protocol in one command and both
+   outcomes are recorded under `evidence/demo/`; README carries the mermaid architecture diagram;
+   `docs/VIDEO-SCRIPT.md` is the 3-minute walkthrough. Remaining: record the video, submit.)
 
 ## 6. Acceptance criteria
 
