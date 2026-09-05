@@ -165,3 +165,91 @@ $ cd sealed-bid-ts && bun test
  0 fail
  123 expect() calls
 ```
+
+## 2026-09-05 — Task 5: real paid BlindOracle calls (x402, USDC on Base mainnet)
+
+`bo_client.py` answers each HTTP 402 with an EIP-3009 `TransferWithAuthorization` signed by the
+payer wallet (`0x2D0B6cd9485e59a6eDc10B048227FAF0e81D174D`, also the CRE workflow owner); the
+facilitator submits the transfer, so the payer spends no gas. Prices are read from the live
+challenge, never hardcoded. **Nine calls, three distinct SKUs, $0.57 total**, each a USDC
+transfer on Base mainnet (chain id 8453) to the treasury named in the challenge
+(`0x5E709929A4AB69eC3a8811d03417869059BC4EB9`). The full ledger is `bo_calls.jsonl`; the
+deliverables of the second bracket are committed under `evidence/bo/`.
+
+### Start-of-session smoke test (free)
+
+```
+$ python3 scripts/skucheck.py
+skucheck against https://api.craigmbrown.com
+  ✓ reputation.lookup                    $0.01
+  ✓ agent.trust-badge                    $0.01
+  ✓ agent.prehire-check                  $0.25
+  ✓ security.process-attestation         $0.25
+  ✓ arbitration.dispute-settlement       $5.0
+  · dispute disclosure: adjudicator=blindoracle_operator_panel neutrality=unilateral
+  ✓ 402 challenge: exact, Base mainnet, amount=10000 (micro-USDC), payTo=0x5E709929A4AB69eC3a8811d03417869059BC4EB9, asset=USDC
+  ✓ proof rail up: 945 settlements scanned, latest kind 30120
+  ✓ payer 0x2D0B6cd9485e59a6eDc10B048227FAF0e81D174D holds 10.82 USDC on Base; one bracket costs $0.52
+GREEN — the paid path is live
+```
+
+### The bracket around the SETTLE run (`runId 0xc5c693bb…5b00`), second execution — deliverables in `evidence/bo/`
+
+| Step | SKU | Price | Deliverable (abridged) | Base mainnet tx |
+|---|---|---|---|---|
+| pre-bid vet of the seller | `reputation.lookup` `sealedbid-agent-b` | $0.01 | `found:true score:0 badge:none` — "registered passport with NO provider track record yet — an honest zero, not a rating" | [`0x88d7905a…3cac`](https://basescan.org/tx/0x88d7905a296c5d5c96bd6f06ee272b128a09f6e6f46c48f89771ad8169393cac) |
+| bracket open | `agent.trust-badge` `sealedbid-agent-a`, `task_id = runId` | $0.01 | `badge_label:UNVERIFIED issued:true` — "identity verification only — NOT code quality or capability" | [`0xbf21bf34…f3be`](https://basescan.org/tx/0xbf21bf34e58fb278eb9df35439652a01491a0c829783943443237fd670cdf3be) |
+| high-value screen of the seller | `agent.prehire-check` `sealedbid-agent-b` | $0.25 | `verdict:CAUTION`, `red_flags:[not_audited, no_delivery_history, no_local_history]`, `method: deterministic ledger lookup — zero LLM` | [`0x5cfc2e9a…2372`](https://basescan.org/tx/0x5cfc2e9aed1ae8a13594fe26f88b7d4e32cab1e2ca40127ed2adc3f483c32372) |
+| bracket close | `reputation.lookup` `sealedbid-agent-b` | $0.01 | `found:true score:0 badge:none` | [`0xefcf4a5c…ce63`](https://basescan.org/tx/0xefcf4a5c83279c5e8dcf708a70622eb28dba08af75c35dbae71b358ab308ce63) |
+
+`changed_outcome=false` on every vet: a zero-history counterparty on a $105 trade is below the
+pre-hire threshold in the demo, so the CAUTION verdict is recorded and the run proceeds. That is
+the honest reading of a brand-new passport, and it is exactly what the SKU says it is.
+
+First bracket (same four steps, 18:45Z): txs `0x0f267d3c…922d`, `0x5e636ec4…e78`, `0x742581fd…02de`,
+`0x6661ae6f…9b5d`. First-ever call (18:44Z, before the parser read the `payment` block):
+`0x7476a5f7…dcdb`.
+
+### Verified from the chain, not from the API
+
+```
+$ cast receipt 0x7476a5f70942b33a90ab8f9a57588d0c61083de261601474ddcbdf58d4e6dcdb --rpc-url https://mainnet.base.org
+status 0x1 block 50922254 submitted by 0xe74817f4cdc15844314812b2271276e64e890fae (facilitator)
+USDC Transfer from 0x2d0b…174d to 0x5e70…4eb9 amount 10000 micro-USDC     ← $0.01, gasless for the payer
+
+$ cast receipt 0x5cfc2e9aed1ae8a13594fe26f88b7d4e32cab1e2ca40127ed2adc3f483c32372 --rpc-url https://mainnet.base.org
+status 0x1 block 50922324 submitted by 0x68a96f41ff1e9f2e7b591a931a4ad224e7c07863 (facilitator)
+USDC Transfer from 0x2d0b…174d to 0x5e70…4eb9 amount 250000 micro-USDC    ← $0.25
+
+$ cast call USDC "balanceOf(address)" 0x2D0B…174D   # before → after the nine calls
+10816202 → 10246202 micro-USDC                     ← exactly $0.57 spent
+```
+
+### What the public proof rail says about these payments — recorded, not hidden
+
+`GET /v1/proofs/settlement/0x7476a5f7…dcdb` returns a `LedgerBackedSettlementReceipt` with
+`rail: usdc_base`, `amount_usd: 0.01`, `settlement_ref_resolved: true` — **and
+`payer_class: "self"`**: "The payer is a wallet the fleet operates (self-pay or dogfood). Such
+settlements are real on-chain transfers but are deliberately NOT issued a reputation-bearing
+ProofOfSettledOutcome." The payer wallet is the author's, and the author operates BlindOracle
+(see `DISCLOSURE.md` §1). So: the payments are real, the deliverables are real, the API was used
+exactly as any outside agent would use it — and these nine calls are **not** evidence of
+third-party demand for BlindOracle, and the rail itself says so.
+
+### Two demo passports (free, `POST /v1/agents/register`)
+
+| Agent | agent_id | tier | wallet |
+|---|---|---|---|
+| `sealedbid-agent-a` (buyer, pays) | `agent_69cdcf6a04fa` | observer | `0x2D0B…174D` |
+| `sealedbid-agent-b` (seller) | `agent_295d689e1f02` | observer | `0xaE4B357dBf9127b17050a0128Dc146fa31bE89c1` (fresh, unfunded) |
+
+### Test suite
+
+```
+$ python3 -m pytest tests/test_bo_client.py -q
+11 passed
+```
+
+Includes the evidence-rule tests: `build_dispute_evidence()` never contains a reserve,
+`assert_no_reserve()` catches a reserve in a string, a number, or a nested field (hex hashes
+excluded), and `dispute()` refuses a leaking payload before anything is sent.
