@@ -1,0 +1,264 @@
+{
+ "agent_a": "sealedbid-agent-a",
+ "agent_b": "sealedbid-agent-b",
+ "attestation": {
+  "checks": [
+   {
+    "detail": "all declared steps found in evidence",
+    "id": "A1",
+    "name": "required steps present",
+    "verdict": "pass"
+   },
+   {
+    "detail": "evidence order matches declared order",
+    "id": "A2",
+    "name": "declared order honored",
+    "verdict": "pass"
+   },
+   {
+    "detail": "no step declares a predicate",
+    "id": "A3",
+    "name": "predicate recomputation",
+    "verdict": "not_applicable"
+   },
+   {
+    "detail": "timestamps monotonic and within window",
+    "id": "A4",
+    "name": "timeline consistency",
+    "verdict": "pass"
+   },
+   {
+    "detail": "no forbidden steps declared",
+    "id": "A5",
+    "name": "forbidden steps absent",
+    "verdict": "not_applicable"
+   },
+   {
+    "detail": "chain_broken at record index(es): [1, 2, 3, 4]",
+    "id": "A6",
+    "name": "evidence chain linkage",
+    "verdict": "fail"
+   },
+   {
+    "detail": "no signed records submitted",
+    "id": "A7",
+    "name": "signature verification",
+    "verdict": "unverifiable"
+   }
+  ],
+  "job_id": "15374ff946cc",
+  "status": 200,
+  "tx_hash": "0x5e1f312fe463f65a9dc1c4fc2fa7497a77d96b702d4c5f8580bb1c0856585841",
+  "verdict": "non_conformant"
+ },
+ "evidence_chain": [
+  {
+   "actor": "sealedbid-agent-a",
+   "counterparty": "sealedbid-agent-b",
+   "hmac": "654b161f20e7e53fd71acf615dd2ac37c605932dda98a1f922fbe611d14076e5",
+   "prehire_tx": "0x389f8e68fe594066f290a1de6a67eb7f447f263412aa5056e8dcb407dbe564f3",
+   "prehire_verdict": "CAUTION",
+   "prev_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+   "pubkey": "19e607b3f7da41b14be9dbc6a8a3eb5adeabdf90dea62bf66ab114d36736a36b",
+   "reputation_tx": "0x734e3ab56a66a8c629d5a464056ea582d0b25593e98b0205bc1d98d85c88fa28",
+   "sig_scheme": "hmac-sha256",
+   "step_id": "vet_a",
+   "ts": "2026-09-05T18:58:45Z"
+  },
+  {
+   "actor": "sealedbid-agent-b",
+   "counterparty": "sealedbid-agent-a",
+   "hmac": "8fcce72b714898d31b1a25e0f48c63dda2bd9b944b60735e1a4efed615c5d92b",
+   "prehire_tx": "0xc95a512ca3a8259f2c3380694d29d0f4e4f8a679648109af039ff62783d39993",
+   "prehire_verdict": "CAUTION",
+   "prev_sha256": "ea2011b40862b86defeb8873527d326e20ca5ceb55a8968a53d5274cab7c6a61",
+   "pubkey": "19e607b3f7da41b14be9dbc6a8a3eb5adeabdf90dea62bf66ab114d36736a36b",
+   "reputation_tx": "0xd7e39b040c947c36ade0dfbfcb136da57ae0c56d6c2fc228c6eccd4f2df6c80b",
+   "sig_scheme": "hmac-sha256",
+   "step_id": "vet_b",
+   "ts": "2026-09-05T18:58:49Z"
+  },
+  {
+   "actor": "sealedbid-agent-a",
+   "badge_tx": "0xe432849399a20f9fdc392f15ad45f608a8c76e30ddf916cb91d2c2d09df85f62",
+   "hmac": "70719fe5bcb05996742f2fbbaa13d663a3828b06c7e545566813820252aa1b15",
+   "prev_sha256": "ffe3ec6c4c57bb6ca1cc4cfb6143f2cb6005a6e65886ba73389359303cf4696a",
+   "pubkey": "19e607b3f7da41b14be9dbc6a8a3eb5adeabdf90dea62bf66ab114d36736a36b",
+   "sig_scheme": "hmac-sha256",
+   "step_id": "bracket_open",
+   "ts": "2026-09-05T18:58:50Z"
+  },
+  {
+   "broadcast": true,
+   "clearing_price": 105.0,
+   "commitment_a": "0x0f78ee66fb4c59aa83ff54c75195c0a8db854cce543821eca9734750b1cd08a3",
+   "commitment_b": "0x3b45023e62fd413f29b3e20f4c9b4711d505ace823a4123f44aa8dbd9a3aac2f",
+   "hmac": "139561b02ec5bce2d9e3cf8c6c885c4fddd51878769646c706a72507a1abde02",
+   "outcome": "SETTLE",
+   "prev_sha256": "fa41e481de5ca35c01ccd0490576274e4fb5ec30d9d0571a9582e7b882f2657c",
+   "pubkey": "19e607b3f7da41b14be9dbc6a8a3eb5adeabdf90dea62bf66ab114d36736a36b",
+   "run_id": "0x1ab101a2aa6271b17e1a7abb3fdaedfc8f199227656b7180a55be0f99c47eea9",
+   "settlement_tx": "0x3d241f2b75f53b1e81761991f7e3b6160e2ea6d9a70c31eda2f588cad8521735",
+   "sig_scheme": "hmac-sha256",
+   "step_id": "seal",
+   "ts": "2026-09-05T18:59:10Z"
+  },
+  {
+   "hmac": "1815527f3254a1326cd536853819c1f5f79a2c4df39a79d542137735db60cbbb",
+   "outcome": "SETTLE",
+   "prev_sha256": "e809635d9a9036b8f510672144d6509835bba2c1f00ff6e3589129a3dc5f3b84",
+   "pubkey": "19e607b3f7da41b14be9dbc6a8a3eb5adeabdf90dea62bf66ab114d36736a36b",
+   "receiver_clearing_micro": 105000000,
+   "receiver_matches_enclave": true,
+   "sig_scheme": "hmac-sha256",
+   "step_id": "settle_or_abort",
+   "transfer": {
+    "block": 46433232,
+    "from": "0x2D0B6cd9485e59a6eDc10B048227FAF0e81D174D",
+    "status": 1,
+    "to": "0xaE4B357dBf9127b17050a0128Dc146fa31bE89c1",
+    "tx": "0x1389bfac88595dddb297c800dc1fafc9d160811466f36ad4de23a41340de9c49",
+    "value_wei": 105000000
+   },
+   "ts": "2026-09-05T18:59:11Z"
+  },
+  {
+   "attestation_tx": "0x5e1f312fe463f65a9dc1c4fc2fa7497a77d96b702d4c5f8580bb1c0856585841",
+   "hmac": "c0a6802d056ed229186fdc6b7ba669841dd543c74c53904422be4b220b9aa446",
+   "prev_sha256": "22963ab46324da3240e369dd9368495922b0df986a6ea76fe36458f397c611fc",
+   "pubkey": "19e607b3f7da41b14be9dbc6a8a3eb5adeabdf90dea62bf66ab114d36736a36b",
+   "sig_scheme": "hmac-sha256",
+   "step_id": "attest",
+   "ts": "2026-09-05T18:59:13Z",
+   "verdict": "non_conformant"
+  },
+  {
+   "actor": "sealedbid-agent-a",
+   "counterparty": "sealedbid-agent-b",
+   "hmac": "142bad3620a9ceb70b8df3139e50358f669e49851a3a5a57c3fb1006cf9d3a05",
+   "prev_sha256": "d2b42b200c89df73086a385202e403e0b58f1288a5ad7c5c5c63e7f041d891a5",
+   "pubkey": "19e607b3f7da41b14be9dbc6a8a3eb5adeabdf90dea62bf66ab114d36736a36b",
+   "reputation_tx": "0xa163ebbcea702e66b563e353510156d31ee53274d621019e740b5c34eb80d00a",
+   "sig_scheme": "hmac-sha256",
+   "step_id": "bracket_close",
+   "ts": "2026-09-05T18:59:15Z"
+  }
+ ],
+ "evidence_chain_verifies": true,
+ "finished": "2026-09-05T18:59:15Z",
+ "run_label": "demo-1788634721",
+ "seal": {
+  "clearing_price": 105.0,
+  "commitment_a": "0x0f78ee66fb4c59aa83ff54c75195c0a8db854cce543821eca9734750b1cd08a3",
+  "commitment_b": "0x3b45023e62fd413f29b3e20f4c9b4711d505ace823a4123f44aa8dbd9a3aac2f",
+  "exit_code": 0,
+  "outcome": "SETTLE",
+  "receiver": "0xA2eB7d6EEd6a4d0976cb29B226093E007E720590",
+  "result_line": "SETTLE @ 105 (run: simulation) tx: 0x3d241f2b75f53b1e81761991f7e3b6160e2ea6d9a70c31eda2f588cad8521735",
+  "run_id": "0x1ab101a2aa6271b17e1a7abb3fdaedfc8f199227656b7180a55be0f99c47eea9",
+  "settlement_tx": "0x3d241f2b75f53b1e81761991f7e3b6160e2ea6d9a70c31eda2f588cad8521735"
+ },
+ "settle_or_abort": {
+  "outcome": "SETTLE",
+  "receiver_matches_enclave": true,
+  "receiver_read": {
+   "clearing_price_micro": 105000000,
+   "commitment_a": "0x0f78ee66fb4c59aa83ff54c75195c0a8db854cce543821eca9734750b1cd08a3",
+   "commitment_b": "0x3b45023e62fd413f29b3e20f4c9b4711d505ace823a4123f44aa8dbd9a3aac2f",
+   "receiver": "0xA2eB7d6EEd6a4d0976cb29B226093E007E720590",
+   "recorded_at": 1788634750,
+   "settlement_count": 2
+  },
+  "transfer": {
+   "block": 46433232,
+   "from": "0x2D0B6cd9485e59a6eDc10B048227FAF0e81D174D",
+   "status": 1,
+   "to": "0xaE4B357dBf9127b17050a0128Dc146fa31bE89c1",
+   "tx": "0x1389bfac88595dddb297c800dc1fafc9d160811466f36ad4de23a41340de9c49",
+   "value_wei": 105000000
+  }
+ },
+ "started": "2026-09-05T18:58:42Z",
+ "steps": {
+  "bracket_close": {
+   "deliverable_brief": {
+    "badge": "none",
+    "found": true,
+    "score": 0
+   },
+   "job_id": "708b8d4f64b3",
+   "price_usd": 0.01,
+   "sku": "reputation.lookup",
+   "status": 200,
+   "tx_hash": "0xa163ebbcea702e66b563e353510156d31ee53274d621019e740b5c34eb80d00a"
+  },
+  "bracket_open": {
+   "deliverable_brief": {
+    "badge_label": "UNVERIFIED"
+   },
+   "job_id": "e68fed390b80",
+   "price_usd": 0.01,
+   "sku": "agent.trust-badge",
+   "status": 200,
+   "tx_hash": "0xe432849399a20f9fdc392f15ad45f608a8c76e30ddf916cb91d2c2d09df85f62"
+  },
+  "vet_a": {
+   "prehire": {
+    "deliverable_brief": {
+     "red_flags": [
+      "not_audited",
+      "no_delivery_history",
+      "no_local_history"
+     ],
+     "verdict": "CAUTION"
+    },
+    "job_id": "8edba4a07e9d",
+    "price_usd": 0.25,
+    "sku": "agent.prehire-check",
+    "status": 200,
+    "tx_hash": "0x389f8e68fe594066f290a1de6a67eb7f447f263412aa5056e8dcb407dbe564f3"
+   },
+   "reputation": {
+    "deliverable_brief": {
+     "badge": "none",
+     "found": true,
+     "score": 0
+    },
+    "job_id": "d1e4de0eefcc",
+    "price_usd": 0.01,
+    "sku": "reputation.lookup",
+    "status": 200,
+    "tx_hash": "0x734e3ab56a66a8c629d5a464056ea582d0b25593e98b0205bc1d98d85c88fa28"
+   }
+  },
+  "vet_b": {
+   "prehire": {
+    "deliverable_brief": {
+     "red_flags": [
+      "not_audited",
+      "no_delivery_history",
+      "no_local_history"
+     ],
+     "verdict": "CAUTION"
+    },
+    "job_id": "d8371c82e8a8",
+    "price_usd": 0.25,
+    "sku": "agent.prehire-check",
+    "status": 200,
+    "tx_hash": "0xc95a512ca3a8259f2c3380694d29d0f4e4f8a679648109af039ff62783d39993"
+   },
+   "reputation": {
+    "deliverable_brief": {
+     "badge": "none",
+     "found": true,
+     "score": 0
+    },
+    "job_id": "1972d5a1ddd3",
+    "price_usd": 0.01,
+    "sku": "reputation.lookup",
+    "status": 200,
+    "tx_hash": "0xd7e39b040c947c36ade0dfbfcb136da57ae0c56d6c2fc228c6eccd4f2df6c80b"
+   }
+  }
+ }
+}

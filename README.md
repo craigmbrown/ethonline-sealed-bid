@@ -24,19 +24,45 @@ outcomes**, so that neither party *and neither operator* decides a dispute unila
 Evidence submitted to the arbiter is the enclave's attestation plus a hash, never the
 reserve price itself.
 
+## How it works
+
+```mermaid
+flowchart LR
+    A[Agent A · buyer<br/>holds A_max] -->|vet B · $0.01| BO[(BlindOracle<br/>public x402 API<br/>USDC on Base)]
+    B[Agent B · seller<br/>holds B_min] -->|vet A · $0.01| BO
+    A -->|trust badge · bracket open| BO
+    A -. A_max as Vault secret .-> TEE
+    B -. B_min as Vault secret .-> TEE
+    subgraph CRE["Chainlink CRE Confidential Workflow"]
+        TEE{{"handlerInTee<br/>AWS Nitro enclave<br/>overlap iff B_min ≤ A_max<br/>clearing = midpoint<br/>commitments = sha256(reserve‖salt)"}}
+    end
+    TEE -->|"SETTLE @ clearing<br/>+ commitments + runId"| DON[DON signs the report]
+    TEE -->|"NO_OVERLAP<br/>(nothing else)"| STOP[nothing written<br/>nothing moves]
+    DON -->|Forwarder → onReport| R[[SealedBidReceiver<br/>Base Sepolia<br/>records SETTLE only]]
+    R -->|A pays B clearing| B
+    A -->|process attestation · close bracket| BO
+```
+
+What leaves the enclave is exactly one of `SETTLE @ clearing` or `NO_OVERLAP`, plus two salted commitments and
+a run id. `A_max` and `B_min` never appear in a log line, a return value, a report field, an evidence record,
+a dispute payload, or a transaction — that property is enforced by tests at every layer (`sealed-bid-ts/noleak.ts`,
+`contracts/test`, `tests/test_bo_client.py`, `tests/test_demo.py`) and by leaky implementations kept in the test
+suite as negative controls. `SETTLE` necessarily reveals `A_max + B_min`; that trade-off is stated, not hidden.
+
 ## Status
 
-Day 2 (2026-09-05). The confidential workflow seals both reserves inside `handlerInTee`, emits a signed
-attestation, and on `SETTLE` the DON writes the clearing price + salted commitments to
-`SealedBidReceiver` on Base Sepolia — proven end to end (`EVIDENCE.md`: settlement tx
-[`0x6a02d0ca…34c9`](https://sepolia.basescan.org/tx/0x6a02d0ca2ab8bee53f2745047ffdfce8c1ee45f0cac35d1bd7d37a9196c834c9)).
-A `NO_OVERLAP` run sends no transaction, and the receiver reverts anything that is not a `SETTLE`.
-The BlindOracle bracket is live too: `bo_client.py` pays real x402 challenges (USDC on Base
-mainnet) — nine settled calls across three SKUs so far, every one a USDC transfer verifiable on
-Basescan, deliverables committed under `evidence/bo/`. Next: the two-agent demo driver, video.
+Day 2 (2026-09-05). **Every layer is live and proven with real transactions** (`EVIDENCE.md`):
+
+| Layer | Proof |
+|---|---|
+| Enclave sealing (`handlerInTee`, one `getSecrets` call, 4 Vault secrets) | `cre workflow simulate` runs for SETTLE / NO_OVERLAP / INVALID_INPUT, verbatim in EVIDENCE.md; 34 tests incl. 3 negative controls |
+| Settlement on Base Sepolia | `SealedBidReceiver` records SETTLE only; tx [`0x3d241f2b…1735`](https://sepolia.basescan.org/tx/0x3d241f2b75f53b1e81761991f7e3b6160e2ea6d9a70c31eda2f588cad8521735); NO_OVERLAP sends no tx; 13 forge tests incl. fuzz |
+| Agent A pays Agent B | Base Sepolia tx [`0x1389bfac…9c49`](https://sepolia.basescan.org/tx/0x1389bfac88595dddb297c800dc1fafc9d160811466f36ad4de23a41340de9c49), calldata = run id |
+| Third-party bracket (BlindOracle) | 16 real x402 payments, 4 SKUs, $1.36 on Base mainnet, each a USDC transfer verifiable on Basescan; deliverables in `evidence/bo/` |
+| One-command demo | `scripts/demo.py` — both outcomes recorded in `evidence/demo/` |
 
 See `SPEC.md` for the design and task list, `DISCLOSURE.md` for the pre-existing-work and
-AI-assistance statement.
+AI-assistance statement, `docs/VIDEO-SCRIPT.md` for the demo walkthrough.
 
 ## Layout
 
@@ -56,14 +82,26 @@ secrets.yaml              secret NAME mapping — no values
 
 ## Running
 
-Requires `bun`, Chainlink CRE CLI v1.31.0, Foundry, Python 3.11.
+Requires `bun`, Chainlink CRE CLI v1.31.0, Foundry, Python 3.11 (`pip install -r scripts/requirements.txt`).
 
 ```bash
 cd sealed-bid-ts && bun install && bun test          # 34 tests incl. the no-leak negative controls
 cd contracts && forge test                            # 13 tests incl. a fuzz over the midpoint
-# simulate (see sealed-bid-ts/README.md for the exact env vars and the --broadcast form)
-cre workflow simulate ./sealed-bid-ts --target=staging-settings --non-interactive --trigger-index 0
+python3 -m pytest tests -q                            # 19 tests: client, evidence rule, demo driver
+python3 scripts/skucheck.py                           # is the paid path live right now? (free)
+
+# the whole protocol, free (no BlindOracle calls, no chain write):
+python3 scripts/demo.py --buyer-max 120 --seller-min 90 --no-pay
+# for real: paid vets + badge, SETTLE written to Base Sepolia, A pays B, attestation, close (~$0.79)
+python3 scripts/demo.py --buyer-max 120 --seller-min 90 --broadcast --settle-transfer --attest
+# the abort path: nothing written anywhere
+python3 scripts/demo.py --buyer-max 90 --seller-min 120 --broadcast --no-pay
 ```
+
+`--broadcast` needs `CRE_ETH_PRIVATE_KEY` in a gitignored `.env` (see `.env.sample`) with a little Base Sepolia
+ETH; paid calls need USDC on Base mainnet in the payer wallet. `cre workflow simulate --broadcast` writes through
+the simulator's mock forwarder, so the demo targets the simulation receiver; a live `cre workflow deploy` would
+target the production receiver (`sealed-bid-ts/README.md`).
 
 ## License
 

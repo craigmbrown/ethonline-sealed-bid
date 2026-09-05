@@ -1,0 +1,44 @@
+{
+ "deliverable": {
+  "audit_proof_id": null,
+  "audit_status": null,
+  "deliverable_type": "prehire_check",
+  "deliveries": 0,
+  "first_seen": null,
+  "generated_at": "2026-09-05T18:58:49.484215+00:00",
+  "method": "deterministic ledger lookup \u2014 zero LLM, reproducible",
+  "reasons": [
+   "no BlindOracle audit on record for this agent",
+   "zero recorded completed deliveries",
+   "never seen in any local ledger"
+  ],
+  "red_flags": [
+   "not_audited",
+   "no_delivery_history",
+   "no_local_history"
+  ],
+  "sources_available": {
+   "audited_agents_registry": true,
+   "claw_completions": true,
+   "revenue_ledger": true,
+   "wallet_roster": true
+  },
+  "subject": {
+   "agent_name": "sealedbid-agent-a",
+   "task_id": "demo-1788634721",
+   "wallet": null
+  },
+  "verdict": "CAUTION"
+ },
+ "job_id": "d8371c82e8a8",
+ "payment": {
+  "network": "eip155:8453",
+  "payer": "0x2D0B6cd9485e59a6eDc10B048227FAF0e81D174D",
+  "rail": "base_usdc_x402",
+  "tx_hash": "0xc95a512ca3a8259f2c3380694d29d0f4e4f8a679648109af039ff62783d39993",
+  "verify": "https://api.craigmbrown.com/v1/proofs/settlement/0xc95a512ca3a8259f2c3380694d29d0f4e4f8a679648109af039ff62783d39993"
+ },
+ "powered_by": "BlindOracle",
+ "sku_id": "agent.prehire-check",
+ "status": "complete"
+}

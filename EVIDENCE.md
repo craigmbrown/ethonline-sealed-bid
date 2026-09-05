@@ -253,3 +253,87 @@ $ python3 -m pytest tests/test_bo_client.py -q
 Includes the evidence-rule tests: `build_dispute_evidence()` never contains a reserve,
 `assert_no_reserve()` catches a reserve in a string, a number, or a nested field (hex hashes
 excluded), and `dispute()` refuses a leaking payload before anything is sent.
+
+## 2026-09-05 — Task 9 driver: the whole protocol in one command
+
+`scripts/demo.py` — two runs, verbatim output. Evidence files: `evidence/demo/<runId>.json`
+(each checked with `assert_no_reserve` before it was written; neither contains 120 or 90).
+
+### SETTLE — buyer max 120, seller min 90, `--broadcast --settle-transfer --attest` ($0.79)
+
+```
+$ python3 scripts/demo.py --buyer-max 120 --seller-min 90 --broadcast --settle-transfer --attest
+sealed-bid demo · sealedbid-agent-a (buyer) ↔ sealedbid-agent-b (seller) · label demo-1788634721
+  vet_a           reputation.lookup $0.01 → HTTP 200 tx=0x734e3ab56a66a8c629d5a464056ea582d0b25593e98b0205bc1d98d85c88fa28
+  vet_a/prehire   agent.prehire-check $0.25 → HTTP 200 tx=0x389f8e68fe594066f290a1de6a67eb7f447f263412aa5056e8dcb407dbe564f3
+  vet_b           reputation.lookup $0.01 → HTTP 200 tx=0xd7e39b040c947c36ade0dfbfcb136da57ae0c56d6c2fc228c6eccd4f2df6c80b
+  vet_b/prehire   agent.prehire-check $0.25 → HTTP 200 tx=0xc95a512ca3a8259f2c3380694d29d0f4e4f8a679648109af039ff62783d39993
+  bracket_open    agent.trust-badge $0.01 → HTTP 200 tx=0xe432849399a20f9fdc392f15ad45f608a8c76e30ddf916cb91d2c2d09df85f62
+  seal            cre workflow simulate --target=simulation-settings --broadcast …
+                  enclave says: 'SETTLE @ 105 (run: simulation) tx: 0x3d241f2b75f53b1e81761991f7e3b6160e2ea6d9a70c31eda2f588cad8521735'  runId=0x1ab101a2aa6271b17e1a7abb3fdaedfc8f199227656b7180a55be0f99c47eea9
+  settle          receiver 0xA2eB7d6E… holds clearing=105000000 micro (matches) recordedAt=1788634750 count=2
+  transfer        A → B 105000000 wei on Base Sepolia, tx=0x1389bfac88595dddb297c800dc1fafc9d160811466f36ad4de23a41340de9c49 block=46433232 status=1
+  attest          security.process-attestation $0.25 → HTTP 200 verdict=non_conformant tx=0x5e1f312fe463f65a9dc1c4fc2fa7497a77d96b702d4c5f8580bb1c0856585841
+  bracket_close   reputation.lookup $0.01 → HTTP 200 tx=0xa163ebbcea702e66b563e353510156d31ee53274d621019e740b5c34eb80d00a
+
+result: SETTLE @ 105 (run: simulation) tx: 0x3d241f2b…1735   evidence: evidence/demo/0x1ab101a2…eea9.json   chain verifies: True
+reserves in the evidence file: none (checked)
+```
+
+Three chains touched, all verified independently of the API:
+
+| What | Where | Proof |
+|---|---|---|
+| the enclave's SETTLE record | Base Sepolia, simulation receiver `0xA2eB…0590` | `getSettlement(0x1ab101a2…)` = (105000000, cA, cB, 1788634750); `settlementCount()` = 2 |
+| Agent A pays Agent B the clearing amount | Base Sepolia, [`0x1389bfac…9c49`](https://sepolia.basescan.org/tx/0x1389bfac88595dddb297c800dc1fafc9d160811466f36ad4de23a41340de9c49) | `from 0x2D0B…174D to 0xaE4B…89c1 value 105000000 wei`, calldata == runId; B's balance 0 → 105000000 wei |
+| seven BlindOracle payments | Base mainnet | payer USDC 10.246202 → 9.456202 (exactly $0.79) |
+
+The transfer is symbolic by design — `clearing` in micro-units sent as wei on a testnet — but it is a real
+transaction that closes the SPEC §2.3 loop ("Agent A's wallet then transfers `clearing` to Agent B") and names the
+run id, so anyone can tie it to the receiver's record.
+
+### NO_OVERLAP — buyer max 90, seller min 120, `--broadcast --no-pay` (free)
+
+```
+$ python3 scripts/demo.py --buyer-max 90 --seller-min 120 --broadcast --no-pay
+  seal            cre workflow simulate --target=simulation-settings --broadcast …
+                  enclave says: 'NO_OVERLAP (run: simulation)'  runId=0x855d325d967e9ad5f30fe2cb6cf9e0b86bbd3902e6b6b4b4b8ab447d70904557
+  abort           NO_OVERLAP: nothing written on chain, nothing transferred
+result: NO_OVERLAP (run: simulation)   evidence: evidence/demo/0x855d325d…4557.json   chain verifies: True
+```
+
+No settlement tx, no transfer, `settlementCount()` still 2. The evidence file records the outcome and the two
+salted commitments and nothing else about the bands.
+
+### The process attestation — recorded as it came back, not as we would like it
+
+`security.process-attestation` ($0.25) over the demo's signed evidence chain returned **`non_conformant`**:
+
+| Check | Verdict | Detail |
+|---|---|---|
+| A1 required steps present | **pass** | all declared steps found in evidence |
+| A2 declared order honored | **pass** | evidence order matches declared order |
+| A4 timeline consistency | **pass** | timestamps monotonic and within window |
+| A6 evidence chain linkage | **fail** | `chain_broken at record index(es): [1, 2, 3, 4]` |
+| A7 signature verification | unverifiable | `no signed records submitted` |
+| A3 / A5 | n/a | no predicates, no forbidden steps declared |
+
+So the service confirmed that the six steps happened in the declared order on a consistent timeline, and it
+could not link or verify our chain. The reason is a wire-format mismatch: our records carry `prev_sha256`
+(sha256 of the previous canonical record), `hmac` (HMAC-SHA256 over the record), `pubkey` and `sig_scheme`, and
+`scripts/demo.py::EvidenceChain.verify` confirms that chain locally — but **the field names and canonicalization
+the service expects for A6/A7 are not published** anywhere a caller can read (the catalog entry, the OpenAPI
+route, `skill.md` and the kit pages were checked). We did not guess further at $0.25 a try, and we did not use
+any non-public knowledge of the service. The deliverable's own `limitation` field says what an attestation of
+this kind can and cannot prove either way: internal consistency of a submitted log, never that the log is true.
+That is a fair description of Task 8's ceiling, and it is why the on-chain records above — not the attestation —
+are the load-bearing evidence.
+
+### Test suites at this commit
+
+```
+$ python3 -m pytest tests -q
+19 passed
+$ cd contracts && forge test        # 13 passed
+$ cd sealed-bid-ts && bun test     # 34 pass
+```
