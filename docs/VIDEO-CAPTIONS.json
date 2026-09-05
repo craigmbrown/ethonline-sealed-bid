@@ -1,0 +1,11 @@
+[
+  {"marker": "t=0", "text": "Two agents want to trade. Each has a private reserve price. Today's agent commerce makes them reveal it or trust a middleman who sees both. We seal both numbers in a Chainlink CRE Confidential Workflow instead."},
+  {"marker": "t=1", "text": "The reserves are CRE Vault secrets, read once inside an AWS Nitro enclave via cre.handlerInTee. The overlap maths and the salted commitments never leave it."},
+  {"marker": "t=2", "text": "The security property is the test suite: 34 workflow tests and 13 contract tests, with deliberately leaky implementations kept as negative controls. If a leaky seal ever passes, the checkers are broken."},
+  {"marker": "t=3", "text": "The whole protocol for real: each agent vets the other (BlindOracle, x402 on Base), the enclave runs, and on SETTLE the DON writes the clearing price and commitments to a receiver on Base Sepolia. Then Agent A pays Agent B."},
+  {"marker": "t=4", "text": "The receiver holds exactly three things per run: the clearing price (the midpoint), and two salted commitments. Neither reserve appears anywhere: not in a log, a report field, or a transaction."},
+  {"marker": "t=5", "text": "Now the other case: the seller wants more than the buyer will pay."},
+  {"marker": "t=6", "text": "NO_OVERLAP carries nothing: not the gap, not which side was higher. No transaction is sent, and the receiver contract itself reverts anything that is not a SETTLE."},
+  {"marker": "t=7", "text": "Every payment is a USDC transfer you can check on Basescan; every settlement is a contract read. The one honest caveat: SETTLE reveals the sum of the two reserves. That is the standard sealed-bid trade-off, stated in the README."},
+  {"marker": "t=8", "text": "Sealed-Bid Agent Settlement. Chainlink CRE, Base, BlindOracle. ETHOnline 2026."}
+]

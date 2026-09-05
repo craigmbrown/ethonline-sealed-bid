@@ -26,3 +26,6 @@ dist/
 # Foundry build artifacts
 contracts/out/
 contracts/cache/
+
+# rendered video (regenerate: scripts/render_cast.py evidence/demo.cast evidence/demo.mp4 --captions docs/VIDEO-CAPTIONS.json)
+evidence/*.mp4
