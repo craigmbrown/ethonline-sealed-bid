@@ -22,3 +22,7 @@ dist/
 # CRE compile artifacts
 .cre_build_tmp.js
 *.wasm.br.b64
+
+# Foundry build artifacts
+contracts/out/
+contracts/cache/
