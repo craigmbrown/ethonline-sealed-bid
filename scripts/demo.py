@@ -71,34 +71,73 @@ def canonical(obj: Any) -> bytes:
     return json.dumps(obj, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
 
 
+def rap1_canonical(obj: Any) -> bytes:
+    """RAP-1 §7.1 canonical JSON. Note `ensure_ascii` is left at its default (True):
+    the verifier escapes non-ASCII as \\uXXXX, and a producer that does not will
+    compute a different digest and fail A6/A7 on any accented character."""
+    return json.dumps(obj, sort_keys=True, separators=(",", ":")).encode()
+
+
+# Fields excluded before hashing/signing, per RAP-1 §7.2 / §7.3. Excluding them is
+# what makes the chain computable in one forward pass — a record's hash cannot
+# depend on its own signature.
+_RAP1_CHAIN_EXCLUDE = ("prev_sha256", "signature", "sig_scheme", "pubkey")
+_RAP1_SIG_EXCLUDE = ("signature", "sig_scheme", "pubkey")
+
+
+def _rap1_bytes(rec: dict[str, Any], exclude: tuple[str, ...]) -> bytes:
+    return rap1_canonical({k: v for k, v in rec.items() if k not in exclude})
+
+
 class EvidenceChain:
-    """Each record carries prev_sha256 (of the previous canonical record) and an HMAC-SHA256
-    over its own canonical form, keyed by a per-run key = sha256(secret || run_label).
-    The per-run key travels in the record as `pubkey`: that makes the chain tamper-evident
-    (any edit breaks a hash or a signature) but NOT identity-proving — stated per SPEC §2.4."""
+    """Hash-chained, HMAC-signed, tamper-evident — emitted in the RAP-1 wire format
+    (https://craigmbrown.com/blindoracle/resolution-attestation-profile.html §7).
+
+    Previously this used the field name `hmac`, hashed the FULL previous record, and
+    keyed the HMAC with `bytes.fromhex(key)`. All three differ from the published
+    profile, so `security.process-attestation` returned A6 `chain_broken` and A7
+    `no signed records submitted` on 2026-09-05 — recorded in EVIDENCE.md. The
+    profile's §7 recipe was unpublished at the time; it is published now, so this
+    conforms to it rather than guessing.
+
+    The per-run key travels in the record as `pubkey`, so the chain is tamper-evident
+    but NOT identity-proving — SPEC §2.4, and RAP-1 reports it as
+    `signature_binding: tamper_evident_only`. RAP-1 v1.1.0 also defines an `ed25519`
+    scheme that IS attributable; adopting it would change the SPEC §2.4 claim and is
+    deliberately left as an operator decision."""
 
     def __init__(self, secret: str, run_label: str) -> None:
         self.key = hashlib.sha256((secret + "|" + run_label).encode()).hexdigest()
         self.records: list[dict[str, Any]] = []
 
     def append(self, step_id: str, **detail: Any) -> dict[str, Any]:
-        prev = hashlib.sha256(canonical(self.records[-1])).hexdigest() if self.records else "0" * 64
-        rec: dict[str, Any] = {"step_id": step_id, "ts": now_iso(), "prev_sha256": prev, "sig_scheme": "hmac-sha256", "pubkey": self.key, **detail}
-        rec["hmac"] = hmac.new(bytes.fromhex(self.key), canonical({k: v for k, v in rec.items() if k != "hmac"}), hashlib.sha256).hexdigest()
+        rec: dict[str, Any] = {"step_id": step_id, "ts": now_iso(), **detail}
+        if self.records:
+            rec["prev_sha256"] = hashlib.sha256(
+                _rap1_bytes(self.records[-1], _RAP1_CHAIN_EXCLUDE)).hexdigest()
+        # RAP-1 §7.3: the HMAC key is the `pubkey` STRING, UTF-8 encoded — not the
+        # hex-decoded bytes. Matching this byte-for-byte is required or A7 fails.
+        rec["signature"] = hmac.new(
+            self.key.encode("utf-8"), _rap1_bytes(rec, _RAP1_SIG_EXCLUDE), hashlib.sha256).hexdigest()
+        rec["sig_scheme"] = "hmac-sha256"
+        rec["pubkey"] = self.key
         self.records.append(rec)
         return rec
 
     @staticmethod
     def verify(records: list[dict[str, Any]]) -> bool:
-        prev = "0" * 64
-        for rec in records:
-            if rec.get("prev_sha256") != prev:
+        """Local check using the same rules the remote verifier applies."""
+        for idx, rec in enumerate(records):
+            if idx > 0:
+                expect_prev = hashlib.sha256(
+                    _rap1_bytes(records[idx - 1], _RAP1_CHAIN_EXCLUDE)).hexdigest()
+                if rec.get("prev_sha256") != expect_prev:
+                    return False
+            expect_sig = hmac.new(
+                str(rec.get("pubkey", "")).encode("utf-8"),
+                _rap1_bytes(rec, _RAP1_SIG_EXCLUDE), hashlib.sha256).hexdigest()
+            if not hmac.compare_digest(expect_sig, str(rec.get("signature", ""))):
                 return False
-            body = {k: v for k, v in rec.items() if k != "hmac"}
-            expect = hmac.new(bytes.fromhex(rec["pubkey"]), canonical(body), hashlib.sha256).hexdigest()
-            if not hmac.compare_digest(expect, rec.get("hmac", "")):
-                return False
-            prev = hashlib.sha256(canonical(rec)).hexdigest()
         return True
 
 

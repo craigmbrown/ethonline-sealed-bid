@@ -329,6 +329,43 @@ this kind can and cannot prove either way: internal consistency of a submitted l
 That is a fair description of Task 8's ceiling, and it is why the on-chain records above — not the attestation —
 are the load-bearing evidence.
 
+#### Re-run 2026-09-05 after the recipe was published — **`conformant`**
+
+The cause was confirmed and fixed. BlindOracle published the wire format as the
+**Resolution Attestation Profile v1 (RAP-1)**,
+<https://craigmbrown.com/blindoracle/resolution-attestation-profile.html> §7, and our
+producer differed from it in three ways, each independently fatal to A6/A7:
+
+| Ours (before) | RAP-1 §7 |
+|---|---|
+| field name `hmac` | `signature` |
+| chain hash over the **full** previous record | previous record **minus** `prev_sha256`, `signature`, `sig_scheme`, `pubkey` |
+| HMAC key `bytes.fromhex(pubkey)` | the `pubkey` **string**, UTF-8 encoded |
+
+`scripts/demo.py::EvidenceChain` now emits the published format (and its local
+`verify()` applies the same rules). Re-run over the wire, paid:
+
+```
+sku=security.process-attestation price_usd=0.25 status=200 result=ok
+tx=0xd8c4d1529a4b9445ce4acb27390386ce31a4710a3376acb2df75243cbd0e2b9c
+verdict=conformant  signature_binding=tamper_evident_only  taxonomy_version=1.1.0
+  A1 pass · A2 pass · A3 n/a · A4 pass · A5 n/a · A6 pass · A7 pass
+```
+
+A6 `chain_broken` → **pass**; A7 `no signed records submitted` → **pass**. Verdict
+`non_conformant` → **`conformant`**.
+
+Two things this does NOT change, both still true and both stated by the service itself:
+the evidence remains **submitter-supplied** (`evidence_basis:
+buyer_supplied_unverified` — a fabricated but consistent log would score the same), and
+under the symmetric `hmac-sha256` scheme the verification key travels inside the record,
+so the bundle is **tamper-evident, not attributable** — which is what
+`signature_binding: tamper_evident_only` says and what SPEC §2.4 has always claimed.
+RAP-1 v1.1.0 adds an `ed25519` scheme that IS attributable; adopting it would change the
+SPEC §2.4 claim and is left as a deliberate decision, not slipped in.
+
+The on-chain records above remain the load-bearing evidence.
+
 ### Test suites at this commit
 
 ```
