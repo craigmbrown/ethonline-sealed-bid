@@ -1,11 +1,11 @@
 {
-  "schedule": "0 */5 * * * *",
+  "schedule": "0 */1 * * * *",
   "reserveSecretIdA": "RESERVE_PRICE_AGENT_A",
   "reserveSecretIdB": "RESERVE_PRICE_AGENT_B",
   "saltSecretIdA": "COMMITMENT_SALT_A",
   "saltSecretIdB": "COMMITMENT_SALT_B",
-  "runLabel": "production",
+  "runLabel": "simulation",
   "chainSelectorName": "ethereum-testnet-sepolia-base-1",
-  "receiverAddress": "0xaDF984468f5C7DEeb82FA4c98f25CA3952921ce7",
+  "receiverAddress": "0xA2eB7d6EEd6a4d0976cb29B226093E007E720590",
   "writeGasLimit": "300000"
 }

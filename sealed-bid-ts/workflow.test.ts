@@ -1,13 +1,16 @@
 import { describe, expect } from 'bun:test'
-import type { TeeRuntime } from '@chainlink/cre-sdk'
+import { type Report, type TeeRuntime, TxStatus } from '@chainlink/cre-sdk'
 import { test } from '@chainlink/cre-sdk/test'
 import { assertIdenticalRuns, assertNoReserveLeak, decodeReports, numericTokens, type CapturedRun } from './noleak'
 import {
 	type Config,
 	type EnclaveOutcome,
 	type SealFn,
+	type WriteFn,
 	ZERO32,
+	ZERO_ADDRESS,
 	commit,
+	configSchema,
 	initWorkflow,
 	onCronTrigger,
 	parseReserve,
@@ -15,33 +18,48 @@ import {
 	runIdFor,
 	runSealedBid,
 	sealBids,
+	settlementEnabled,
 	toMicro,
 } from './workflow'
 
-const makeConfig = (): Config => ({
+/** The SealedBidReceiver deployed on Base Sepolia (contracts/src/SealedBidReceiver.sol). */
+const RECEIVER = '0xaDF984468f5C7DEeb82FA4c98f25CA3952921ce7'
+
+const makeConfig = (overrides: Partial<Config> = {}): Config => ({
 	schedule: '0 */1 * * * *',
 	reserveSecretIdA: 'RESERVE_PRICE_AGENT_A',
 	reserveSecretIdB: 'RESERVE_PRICE_AGENT_B',
 	saltSecretIdA: 'COMMITMENT_SALT_A',
 	saltSecretIdB: 'COMMITMENT_SALT_B',
 	runLabel: 'test',
+	chainSelectorName: 'ethereum-testnet-sepolia-base-1',
+	receiverAddress: RECEIVER,
+	writeGasLimit: '300000',
+	...overrides,
 })
 
 const SALT_A = 'salt-a-0f3c9e'
 const SALT_B = 'salt-b-77d1a2'
+const FAKE_TX = `0x${'ab'.repeat(32)}` as const
 
 type Secrets = Record<string, string | undefined>
 
+/** What the fake DON runtime hands to the writer: the same payload it reported. */
+type FakeReport = { payloadB64: string }
+/** One captured on-chain write attempt. */
+type FakeWrite = { receiver: string; payloadB64: string; gasLimit: string }
+
 // The public test surface does not ship a TEE runtime factory, so stand up the
-// slice of `TeeRuntime` the handler uses: config, getSecrets, log, usingTheDons.
-// Every channel the enclave can emit on is captured.
-const makeFakeTeeRuntime = (secrets: Secrets) => {
+// slice of `TeeRuntime` the handler uses: config, getSecrets, log, usingTheDons
+// (report + log). Every channel the enclave can emit on is captured, and the
+// DON-side chain write is captured through an injected `WriteFn`.
+const makeFakeTeeRuntime = (secrets: Secrets, configOverrides: Partial<Config> = {}) => {
 	const logs: string[] = []
 	const reportPayloadsB64: string[] = []
 	const secretCalls: number[] = []
 
 	const runtime = {
-		config: makeConfig(),
+		config: makeConfig(configOverrides),
 		getSecrets: (requests: Array<{ id?: string }>) => {
 			secretCalls.push(requests.length)
 			return {
@@ -51,9 +69,10 @@ const makeFakeTeeRuntime = (secrets: Secrets) => {
 		},
 		log: (message: string) => logs.push(message),
 		usingTheDons: () => ({
+			log: (message: string) => logs.push(message),
 			report: (input: { encodedPayload: string }) => {
 				reportPayloadsB64.push(input.encodedPayload)
-				return { result: () => ({}) }
+				return { result: (): FakeReport => ({ payloadB64: input.encodedPayload }) }
 			},
 		}),
 	}
@@ -61,21 +80,45 @@ const makeFakeTeeRuntime = (secrets: Secrets) => {
 	return { runtime: runtime as unknown as TeeRuntime<Config>, logs, reportPayloadsB64, secretCalls }
 }
 
-/** Run the handler and capture every emitted channel. */
+/** A chain writer that records every attempt and answers with a fixed status. */
+const recordingWriter = (writes: FakeWrite[], txStatus: TxStatus = TxStatus.SUCCESS): WriteFn => {
+	return (_don, report, config) => {
+		writes.push({
+			receiver: config.receiverAddress,
+			payloadB64: (report as unknown as FakeReport).payloadB64,
+			gasLimit: config.writeGasLimit,
+		})
+		return { txStatus, txHash: FAKE_TX }
+	}
+}
+
+type CaptureOptions = {
+	seal?: SealFn
+	salts?: { a?: string; b?: string }
+	config?: Partial<Config>
+	writeStatus?: TxStatus
+}
+
+/** Run the handler and capture every emitted channel, including chain writes. */
 const capture = (
 	a: string | undefined,
 	b: string | undefined,
 	seal: SealFn = sealBids,
 	salts: { a?: string; b?: string } = { a: SALT_A, b: SALT_B },
+	options: Omit<CaptureOptions, 'seal' | 'salts'> = {},
 ): CapturedRun => {
-	const fake = makeFakeTeeRuntime({
-		RESERVE_PRICE_AGENT_A: a,
-		RESERVE_PRICE_AGENT_B: b,
-		COMMITMENT_SALT_A: salts.a,
-		COMMITMENT_SALT_B: salts.b,
-	})
-	const returned = runSealedBid(fake.runtime, seal)
-	return { logs: fake.logs, returned, reportPayloadsB64: fake.reportPayloadsB64 }
+	const fake = makeFakeTeeRuntime(
+		{
+			RESERVE_PRICE_AGENT_A: a,
+			RESERVE_PRICE_AGENT_B: b,
+			COMMITMENT_SALT_A: salts.a,
+			COMMITMENT_SALT_B: salts.b,
+		},
+		options.config ?? {},
+	)
+	const writes: FakeWrite[] = []
+	const returned = runSealedBid(fake.runtime, seal, recordingWriter(writes, options.writeStatus))
+	return { logs: fake.logs, returned, reportPayloadsB64: fake.reportPayloadsB64, writes }
 }
 
 // ─── Deliberately leaky sealing functions (negative controls) ──────────────
@@ -155,12 +198,17 @@ describe('renderOutcome', () => {
 
 describe('handler plumbing', () => {
 	test('reads both reserves and both salts in ONE getSecrets call', () => {
-		const fake = makeFakeTeeRuntime({
-			RESERVE_PRICE_AGENT_A: '120',
-			RESERVE_PRICE_AGENT_B: '90',
-			COMMITMENT_SALT_A: SALT_A,
-			COMMITMENT_SALT_B: SALT_B,
-		})
+		// The production entrypoint with the production writer; the zero receiver
+		// keeps it off-chain (there is no chain in a unit test).
+		const fake = makeFakeTeeRuntime(
+			{
+				RESERVE_PRICE_AGENT_A: '120',
+				RESERVE_PRICE_AGENT_B: '90',
+				COMMITMENT_SALT_A: SALT_A,
+				COMMITMENT_SALT_B: SALT_B,
+			},
+			{ receiverAddress: ZERO_ADDRESS },
+		)
 		onCronTrigger(fake.runtime)
 		expect(fake.secretCalls).toEqual([4])
 	})
@@ -193,8 +241,90 @@ describe('handler plumbing', () => {
 		expect(rep.commitmentB).toBe(ZERO32)
 	})
 	test('simulate-shaped return strings', () => {
-		expect(capture('120', '90').returned).toBe('SETTLE @ 105 (run: test)')
+		expect(capture('120', '90').returned).toBe(`SETTLE @ 105 (run: test) tx: ${FAKE_TX}`)
 		expect(capture('90', '120').returned).toBe('NO_OVERLAP (run: test)')
+	})
+})
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Settlement write (SPEC.md §2.3 / Task 6): the DON writes to the receiver on
+// SETTLE and on nothing else. The receiver contract enforces the same rule
+// independently (contracts/test); this is the workflow-side half.
+// ═══════════════════════════════════════════════════════════════════════════
+
+describe('settlement write — SPEC §2.3', () => {
+	test('SETTLE writes exactly once, to the configured receiver, with the reported payload', () => {
+		const run = capture('120', '90')
+		expect(run.writes).toHaveLength(1)
+		expect(run.writes?.[0].receiver).toBe(RECEIVER)
+		expect(run.writes?.[0].gasLimit).toBe('300000')
+		// The bytes handed to the chain are the very bytes the enclave reported.
+		expect(run.writes?.[0].payloadB64).toBe(run.reportPayloadsB64[0])
+		expect(decodeReports(run)[0].result).toBe('SETTLE')
+		expect(run.logs.some((l) => l.includes(`settlement: written to ${RECEIVER} tx=${FAKE_TX}`))).toBe(true)
+	})
+	test('NO_OVERLAP never writes', () => {
+		for (const [a, b] of [
+			['90', '120'],
+			['1', '1000000'],
+			['100', '101'],
+		]) {
+			const run = capture(a, b)
+			expect(decodeReports(run)[0].result).toBe('NO_OVERLAP')
+			expect(run.writes).toEqual([])
+			expect(run.returned).not.toContain('tx:')
+		}
+	})
+	test('INVALID_INPUT never writes', () => {
+		for (const run of [capture('120', 'abc'), capture(undefined, '90'), capture('120', '90', sealBids, { a: SALT_A })]) {
+			expect(decodeReports(run)[0].result).toBe('INVALID_INPUT')
+			expect(run.writes).toEqual([])
+		}
+	})
+	test('the zero receiver address disables the write even on SETTLE (pure-simulation mode)', () => {
+		const run = capture('120', '90', sealBids, { a: SALT_A, b: SALT_B }, { config: { receiverAddress: ZERO_ADDRESS } })
+		expect(decodeReports(run)[0].result).toBe('SETTLE')
+		expect(run.writes).toEqual([])
+		expect(run.returned).toBe('SETTLE @ 105 (run: test)')
+		expect(settlementEnabled(makeConfig({ receiverAddress: ZERO_ADDRESS }))).toBe(false)
+		expect(settlementEnabled(makeConfig())).toBe(true)
+	})
+	test('a reverted or fatal write fails the run without naming a reserve', () => {
+		for (const status of [TxStatus.REVERTED, TxStatus.FATAL]) {
+			let message = ''
+			try {
+				capture('120', '90', sealBids, { a: SALT_A, b: SALT_B }, { writeStatus: status })
+			} catch (e) {
+				message = (e as Error).message
+			}
+			expect(message).toContain('settlement write failed')
+			expect(message).toContain(TxStatus[status])
+			for (const tok of numericTokens(message)) expect([120, 90]).not.toContain(tok)
+		}
+	})
+	test('the write is a function of the report only — no reserve reaches the chain', () => {
+		for (const [a, b] of RESERVE_PAIRS) {
+			const run = capture(a, b)
+			for (const w of run.writes ?? []) {
+				const [rep] = decodeReports({ ...run, reportPayloadsB64: [w.payloadB64] })
+				expect(() => assertNoReserveLeak({ ...run, reportPayloadsB64: [w.payloadB64] }, [a, b])).not.toThrow()
+				expect(rep.result).toBe('SETTLE')
+			}
+		}
+	})
+	test('config schema defaults: chain, zero receiver, gas limit', () => {
+		const parsed = configSchema.parse({
+			schedule: '0 */1 * * * *',
+			reserveSecretIdA: 'A',
+			reserveSecretIdB: 'B',
+			saltSecretIdA: 'SA',
+			saltSecretIdB: 'SB',
+			runLabel: 'x',
+		})
+		expect(parsed.chainSelectorName).toBe('ethereum-testnet-sepolia-base-1')
+		expect(parsed.receiverAddress).toBe(ZERO_ADDRESS)
+		expect(parsed.writeGasLimit).toBe('300000')
+		expect(() => configSchema.parse({ ...parsed, receiverAddress: 'not-an-address' })).toThrow()
 	})
 })
 

@@ -19,6 +19,8 @@ export type CapturedRun = {
 	logs: string[]
 	returned: string
 	reportPayloadsB64: string[]
+	/** On-chain write attempts the DON side made (SPEC §2.3: exactly one on SETTLE, none otherwise). */
+	writes?: Array<{ receiver: string; payloadB64: string; gasLimit: string }>
 }
 
 const b64ToHex = (b64: string): `0x${string}` => `0x${Buffer.from(b64, 'base64').toString('hex')}`
@@ -80,6 +82,7 @@ export const assertNoReserveLeak = (run: CapturedRun, reserves: [string, string]
 export const projectNonCommitment = (run: CapturedRun) => ({
 	logs: run.logs.map((l) => l.replace(/0x[0-9a-fA-F]{64}/g, '<hash>')),
 	returned: run.returned,
+	writes: (run.writes ?? []).length,
 	reports: decodeReports(run).map(({ result, clearingPriceMicro, runLabel }) => ({
 		result,
 		clearingPriceMicro: clearingPriceMicro.toString(),

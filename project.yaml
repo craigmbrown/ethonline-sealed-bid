@@ -26,3 +26,14 @@ private-settings:
   rpcs:
     - chain-name: ethereum-testnet-sepolia-base-1
       url: https://sepolia.base.org
+
+# Simulator broadcast target (`cre workflow simulate --broadcast`). Same RPCs as
+# staging; only the workflow config differs (the simulation receiver).
+simulation-settings:
+  account:
+    workflow-owner-address: '0x2D0B6cd9485e59a6eDc10B048227FAF0e81D174D'
+  rpcs:
+    - chain-name: ethereum-testnet-sepolia-base-1
+      url: https://sepolia.base.org
+    - chain-name: ethereum-mainnet
+      url: https://ethereum-rpc.publicnode.com

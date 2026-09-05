@@ -1,10 +1,21 @@
-import { cre, hexToBase64, type TeeRuntime } from '@chainlink/cre-sdk'
+import {
+	EVMClient,
+	TxStatus,
+	bytesToHex,
+	cre,
+	getNetwork,
+	hexToBase64,
+	type Report,
+	type Runtime,
+	type TeeRuntime,
+} from '@chainlink/cre-sdk'
 import { concat, encodeAbiParameters, parseAbiParameters, sha256, stringToBytes, type Hex } from 'viem'
 import { z } from 'zod'
 
 // ─── Config ────────────────────────────────────────────────────────────────
 // Nothing in the config is secret. The reserve prices and the commitment salts
 // are Vault secrets and are only ever materialised inside the enclave.
+export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 export const configSchema = z.object({
 	schedule: z.string(),
 	reserveSecretIdA: z.string(),
@@ -12,6 +23,15 @@ export const configSchema = z.object({
 	saltSecretIdA: z.string(),
 	saltSecretIdB: z.string(),
 	runLabel: z.string(),
+	// Settlement chain (SPEC.md §2.3). `receiverAddress` = the deployed
+	// SealedBidReceiver; the zero address disables the on-chain write entirely
+	// (pure-simulation mode). The write happens ONLY on SETTLE.
+	chainSelectorName: z.string().default('ethereum-testnet-sepolia-base-1'),
+	receiverAddress: z
+		.string()
+		.regex(/^0x[0-9a-fA-F]{40}$/, 'receiverAddress must be a 20-byte hex address')
+		.default(ZERO_ADDRESS),
+	writeGasLimit: z.string().regex(/^[0-9]+$/).default('300000'),
 })
 export type Config = z.infer<typeof configSchema>
 
@@ -92,15 +112,51 @@ export type Attestation = {
 	runId: Hex
 }
 
+// ─── Settlement write (SPEC.md §2.3) ───────────────────────────────────────
+// The DON hands the signed report to the CRE Forwarder on the settlement chain,
+// which verifies the signatures and calls SealedBidReceiver.onReport. This is
+// invoked ONLY when the enclave's result is SETTLE — a NO_OVERLAP or
+// INVALID_INPUT run never reaches this function, so nothing is written on chain
+// (and the receiver independently reverts anything that is not a SETTLE).
+//
+// `WriteFn` is injectable so the test suite can prove the workflow-side rule
+// (never called on non-SETTLE, called exactly once on SETTLE) without a chain.
+export type WriteReceipt = { txStatus: TxStatus; txHash: Hex; errorMessage?: string }
+export type WriteFn = (don: Runtime<Config>, report: Report, config: Config) => WriteReceipt
+
+export const writeSettlement: WriteFn = (don, report, config) => {
+	const network = getNetwork({ chainFamily: 'evm', chainSelectorName: config.chainSelectorName })
+	if (!network) throw new Error(`unknown chain selector name: ${config.chainSelectorName}`)
+	const evm = new EVMClient(network.chainSelector.selector)
+	const reply = evm
+		.writeReport(don, {
+			receiver: config.receiverAddress,
+			report,
+			gasConfig: { gasLimit: config.writeGasLimit },
+		})
+		.result()
+	return {
+		txStatus: reply.txStatus,
+		txHash: reply.txHash ? (bytesToHex(reply.txHash) as Hex) : ZERO32,
+		errorMessage: reply.errorMessage,
+	}
+}
+
+export const settlementEnabled = (config: Config): boolean => config.receiverAddress.toLowerCase() !== ZERO_ADDRESS
+
 // ─── TEE handler ───────────────────────────────────────────────────────────
 // Receives a `TeeRuntime`. Everything here runs inside the enclave until we
 // explicitly cross back with `usingTheDons()`. The only things that cross are
 // derived from `EnclaveOutcome` plus the salted commitments — never a reserve.
 //
-// `seal` is injectable so the test suite can run the identical output path
-// against deliberately leaky sealing functions and prove the no-leak checks
-// catch them. Production always uses `sealBids`.
-export const runSealedBid = (runtime: TeeRuntime<Config>, seal: SealFn = sealBids): string => {
+// `seal` and `write` are injectable so the test suite can run the identical
+// output path against deliberately leaky sealing functions and a fake chain
+// writer. Production always uses `sealBids` and `writeSettlement`.
+export const runSealedBid = (
+	runtime: TeeRuntime<Config>,
+	seal: SealFn = sealBids,
+	write: WriteFn = writeSettlement,
+): string => {
 	const config = runtime.config
 
 	// ONE getSecrets call for the whole execution (measured runtime limit:
@@ -149,7 +205,7 @@ export const runSealedBid = (runtime: TeeRuntime<Config>, seal: SealFn = sealBid
 		attestation.commitmentB,
 		attestation.runId,
 	])
-	donRuntime
+	const report = donRuntime
 		.report({
 			encodedPayload: hexToBase64(encodedPayload),
 			encoderName: 'evm',
@@ -158,7 +214,20 @@ export const runSealedBid = (runtime: TeeRuntime<Config>, seal: SealFn = sealBid
 		})
 		.result()
 
-	return `${renderOutcome(outcome)} (run: ${config.runLabel})`
+	// SPEC §2.3: on SETTLE the DON writes the attestation to the receiver on
+	// Base Sepolia; on anything else nothing is written on chain.
+	let txNote = ''
+	if (attestation.result === 'SETTLE' && settlementEnabled(config)) {
+		const receipt = write(donRuntime, report, config)
+		if (receipt.txStatus !== TxStatus.SUCCESS) {
+			// The message carries chain status only — never an input.
+			throw new Error(`settlement write failed: status=${TxStatus[receipt.txStatus]} tx=${receipt.txHash}`)
+		}
+		donRuntime.log(`settlement: written to ${config.receiverAddress} tx=${receipt.txHash}`)
+		txNote = ` tx: ${receipt.txHash}`
+	}
+
+	return `${renderOutcome(outcome)} (run: ${config.runLabel})${txNote}`
 }
 
 export const onCronTrigger = (runtime: TeeRuntime<Config>): string => runSealedBid(runtime)

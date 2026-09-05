@@ -196,7 +196,19 @@ DISCLOSURE.md                  pre-existing work + AI assistance statement
    `EVIDENCE.md`.)
 5. `bo_client.py` + `scripts/skucheck.py`; real paid calls against the live API; record
    settlement evidence (tx hashes) in `EVIDENCE.md`.
-6. Settlement receiver on Base Sepolia; `SETTLE` writes on chain, `NO_OVERLAP` writes nothing.
+6. ✅ Settlement receiver on Base Sepolia; `SETTLE` writes on chain, `NO_OVERLAP` writes nothing.
+   (Done 2026-09-05. `contracts/src/SealedBidReceiver.sol` accepts `onReport` only from its immutable
+   Forwarder, optionally only from a pinned workflow owner, and records ONLY a `SETTLE` — every other
+   result reverts, so a non-settling run cannot leave a trace even if a workflow tried. The workflow
+   calls `EVMClient.writeReport` on SETTLE alone. **Measured deviation from §2.3 as written:** the CRE
+   simulator's `--broadcast` signs through its own mock forwarder `0x82300bd7…dF3e5` as placeholder
+   owner `0xaaaa…aaaa`, so the production receiver (`0xaDF9…1ce7`, trusts the CRE Forwarder
+   `0xF8344CFd…4482`) correctly rejected it. A second, simulation-only receiver (`0xA2eB…0590`) pinned
+   to the mock forwarder is what `simulation-settings` writes to; a live `cre workflow deploy` targets
+   the production one. The clearing price and both commitments are on Base Sepolia at
+   tx `0x6a02d0ca…34c9`; the NO_OVERLAP run sent no transaction. 13 forge + 34 bun tests. The "Agent A's
+   wallet then transfers `clearing` to Agent B" half of §2.3 is the demo driver's job (Task 9) — the
+   receiver records the price the agents are bound to; it does not custody funds.)
 7. Security review before each push: no secrets, no private-repo references, real history.
 8. *(optional)* Dispute routing + process attestation per §2.4.
 9. Submission: README architecture diagram, 3-minute video recorded while `skucheck` is

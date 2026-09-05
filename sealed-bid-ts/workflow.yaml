@@ -20,3 +20,12 @@ private-settings:
     workflow-path: ./main.ts
     config-path: ./config.staging.json
     secrets-path: ../secrets.yaml
+simulation-settings:
+  # `cre workflow simulate --broadcast` writes through the simulator's own mock
+  # forwarder, so this target points at the receiver deployed for that forwarder.
+  user-workflow:
+    workflow-name: sealed-bid-simulation
+  workflow-artifacts:
+    workflow-path: ./main.ts
+    config-path: ./config.simulation.json
+    secrets-path: ../secrets.yaml

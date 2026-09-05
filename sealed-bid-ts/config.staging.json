@@ -4,5 +4,8 @@
   "reserveSecretIdB": "RESERVE_PRICE_AGENT_B",
   "saltSecretIdA": "COMMITMENT_SALT_A",
   "saltSecretIdB": "COMMITMENT_SALT_B",
-  "runLabel": "staging"
+  "runLabel": "staging",
+  "chainSelectorName": "ethereum-testnet-sepolia-base-1",
+  "receiverAddress": "0xaDF984468f5C7DEeb82FA4c98f25CA3952921ce7",
+  "writeGasLimit": "300000"
 }

@@ -26,23 +26,39 @@ reserve price itself.
 
 ## Status
 
-Day 1 (2026-09-04). Repository initialised. See `SPEC.md` for the design and the
-task list, and `DISCLOSURE.md` for the pre-existing-work and AI-assistance statement.
+Day 2 (2026-09-05). The confidential workflow seals both reserves inside `handlerInTee`, emits a signed
+attestation, and on `SETTLE` the DON writes the clearing price + salted commitments to
+`SealedBidReceiver` on Base Sepolia — proven end to end (`EVIDENCE.md`: settlement tx
+[`0x6a02d0ca…34c9`](https://sepolia.basescan.org/tx/0x6a02d0ca2ab8bee53f2745047ffdfce8c1ee45f0cac35d1bd7d37a9196c834c9)).
+A `NO_OVERLAP` run sends no transaction, and the receiver reverts anything that is not a `SETTLE`.
+Next: the paid BlindOracle bracket (`bo_client.py`), the two-agent demo driver, video.
 
-## Layout (planned)
+See `SPEC.md` for the design and task list, `DISCLOSURE.md` for the pre-existing-work and
+AI-assistance statement.
+
+## Layout
 
 ```
-sealed-bid-ts/        CRE confidential workflow (sealing + overlap) + tests
-bo_client.py          thin client for the public BlindOracle API
-scripts/skucheck.py   smoke test that the paid-service path is live
-scripts/demo.py       end-to-end two-agent demo driver
-project.yaml          CRE target config (Base Sepolia)
-secrets.yaml          secret NAME mapping — no values
+sealed-bid-ts/            CRE confidential workflow (sealing + overlap + on-chain write) + 34 tests
+contracts/                SealedBidReceiver.sol (Foundry) + 13 tests; two instances on Base Sepolia
+scripts/deploy_receiver.py  deploys the receiver (forge artifact + web3)
+bo_client.py              thin client for the public BlindOracle API        (Task 5)
+scripts/skucheck.py       smoke test that the paid-service path is live      (Task 5)
+scripts/demo.py           end-to-end two-agent demo driver                   (Task 9)
+project.yaml              CRE targets (Base Sepolia settlement; simulation-settings for --broadcast)
+secrets.yaml              secret NAME mapping — no values
 ```
 
 ## Running
 
-Coming with Phase 1. Requires `bun`, Chainlink CRE CLI v1.31.0, Python 3.11.
+Requires `bun`, Chainlink CRE CLI v1.31.0, Foundry, Python 3.11.
+
+```bash
+cd sealed-bid-ts && bun install && bun test          # 34 tests incl. the no-leak negative controls
+cd contracts && forge test                            # 13 tests incl. a fuzz over the midpoint
+# simulate (see sealed-bid-ts/README.md for the exact env vars and the --broadcast form)
+cre workflow simulate ./sealed-bid-ts --target=staging-settings --non-interactive --trigger-index 0
+```
 
 ## License
 
