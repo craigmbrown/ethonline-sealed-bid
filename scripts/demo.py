@@ -321,6 +321,15 @@ def main() -> int:
     client = None if args.no_pay else bc.BoClient()
     report: dict[str, Any] = {"run_label": run_label, "started": now_iso(), "agent_a": args.agent_a, "agent_b": args.agent_b, "steps": {}}
     print(f"sealed-bid demo · {args.agent_a} (buyer) ↔ {args.agent_b} (seller) · label {run_label}")
+    # Announce the scheme rather than leaving it to be inferred from the records. The
+    # two schemes give materially different guarantees (RAP-1 §7.3) and a reader must
+    # not have to dig into `sig_scheme` to find out which one this run actually used.
+    if chain.scheme == "ed25519":
+        print(f"  {'evidence':15} ed25519, attributable · pubkey {chain.key[:16]}… "
+              f"(published: evidence/signing-key.pub)")
+    else:
+        print(f"  {'evidence':15} hmac-sha256, tamper-evident only — no "
+              f"EVIDENCE_ED25519_PRIVATE_KEY set, so this run attributes nothing")
 
     def paid(step: str, fn, *a, **kw):
         if client is None:
