@@ -1,0 +1,26 @@
+{
+ "deliverable": {
+  "agent": "sealedbid-agent-a",
+  "asserts": "identity verification only \u2014 NOT code quality or capability",
+  "audit_proof_id": null,
+  "audit_status": null,
+  "badge_label": "UNVERIFIED",
+  "deliverable_type": "trust_badge",
+  "generated_at": "2026-09-05T18:46:32.843702+00:00",
+  "issued": true,
+  "registry_url": "https://craigmbrown.com/blindoracle/audited-agents.json",
+  "upgrade": "a code-reviewed credential requires a paid audit (security.massat-audit)",
+  "verify_recipe": "fetch the registry, recompute audit_hash, verify the ProofOfAuditReport (30105) HMAC \u2014 no BO credentials needed"
+ },
+ "job_id": "ab1bea345905",
+ "payment": {
+  "network": "eip155:8453",
+  "payer": "0x2D0B6cd9485e59a6eDc10B048227FAF0e81D174D",
+  "rail": "base_usdc_x402",
+  "tx_hash": "0xbf21bf34e58fb278eb9df35439652a01491a0c829783943443237fd670cdf3be",
+  "verify": "https://api.craigmbrown.com/v1/proofs/settlement/0xbf21bf34e58fb278eb9df35439652a01491a0c829783943443237fd670cdf3be"
+ },
+ "powered_by": "BlindOracle",
+ "sku_id": "agent.trust-badge",
+ "status": "complete"
+}

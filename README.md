@@ -31,7 +31,9 @@ attestation, and on `SETTLE` the DON writes the clearing price + salted commitme
 `SealedBidReceiver` on Base Sepolia — proven end to end (`EVIDENCE.md`: settlement tx
 [`0x6a02d0ca…34c9`](https://sepolia.basescan.org/tx/0x6a02d0ca2ab8bee53f2745047ffdfce8c1ee45f0cac35d1bd7d37a9196c834c9)).
 A `NO_OVERLAP` run sends no transaction, and the receiver reverts anything that is not a `SETTLE`.
-Next: the paid BlindOracle bracket (`bo_client.py`), the two-agent demo driver, video.
+The BlindOracle bracket is live too: `bo_client.py` pays real x402 challenges (USDC on Base
+mainnet) — nine settled calls across three SKUs so far, every one a USDC transfer verifiable on
+Basescan, deliverables committed under `evidence/bo/`. Next: the two-agent demo driver, video.
 
 See `SPEC.md` for the design and task list, `DISCLOSURE.md` for the pre-existing-work and
 AI-assistance statement.
@@ -42,8 +44,11 @@ AI-assistance statement.
 sealed-bid-ts/            CRE confidential workflow (sealing + overlap + on-chain write) + 34 tests
 contracts/                SealedBidReceiver.sol (Foundry) + 13 tests; two instances on Base Sepolia
 scripts/deploy_receiver.py  deploys the receiver (forge artifact + web3)
-bo_client.py              thin client for the public BlindOracle API        (Task 5)
-scripts/skucheck.py       smoke test that the paid-service path is live      (Task 5)
+bo_client.py              x402-paying client for the public BlindOracle API + the evidence rule
+scripts/skucheck.py       smoke test that the paid-service path is live (run first, every session)
+bo_calls.jsonl            one row per paid call: sku, price, tx hash, changed_outcome
+evidence/bo/              the deliverable + payment block of every paid call
+tests/test_bo_client.py   11 offline tests incl. the reserve-never-leaves-the-parties rule
 scripts/demo.py           end-to-end two-agent demo driver                   (Task 9)
 project.yaml              CRE targets (Base Sepolia settlement; simulation-settings for --broadcast)
 secrets.yaml              secret NAME mapping — no values

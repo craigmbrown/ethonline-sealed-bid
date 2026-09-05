@@ -194,8 +194,21 @@ DISCLOSURE.md                  pre-existing work + AI assistance statement
    protocol midpoint, and a reserve may appear only as that clearing price (equal bands
    necessarily settle at the shared value). 27/27 tests; all three paths captured in
    `EVIDENCE.md`.)
-5. `bo_client.py` + `scripts/skucheck.py`; real paid calls against the live API; record
+5. ✅ `bo_client.py` + `scripts/skucheck.py`; real paid calls against the live API; record
    settlement evidence (tx hashes) in `EVIDENCE.md`.
+   (Done 2026-09-05. Client pays x402 `exact` challenges with an EIP-3009 USDC authorization on
+   Base mainnet via the `x402` PyPI SDK; six calls from §2.4 wrapped; one `bo-value` ledger row
+   and one `evidence/bo/*.json` deliverable per paid call. Evidence rule enforced in code:
+   `build_dispute_evidence()` emits attestation fields only and `assert_no_reserve()` refuses a
+   payload carrying a reserve; `dispute()` is gated on an explicit $5 opt-in. **Nine real paid
+   calls settled on Base mainnet** (3 distinct SKUs: reputation ×5, badge ×2, pre-hire ×2, $0.57
+   total), each a USDC transfer from the payer to the treasury submitted gaslessly by the
+   facilitator — verified from the chain, not from the API. **Disclosure the proof rail makes
+   itself:** the payer wallet is one the BlindOracle operator also uses, so the rail marks these
+   settlements `payer_class: self` and deliberately issues no reputation-bearing proof for them;
+   they are real transfers, not reputation evidence. Two demo passports registered
+   (`sealedbid-agent-a` = `agent_69cdcf6a04fa`, `sealedbid-agent-b` = `agent_295d689e1f02`), both
+   observer tier with honest zero history. 11 offline tests.)
 6. ✅ Settlement receiver on Base Sepolia; `SETTLE` writes on chain, `NO_OVERLAP` writes nothing.
    (Done 2026-09-05. `contracts/src/SealedBidReceiver.sol` accepts `onReport` only from its immutable
    Forwarder, optionally only from a pinned workflow owner, and records ONLY a `SETTLE` — every other
