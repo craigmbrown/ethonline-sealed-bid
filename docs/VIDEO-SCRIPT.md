@@ -3,6 +3,24 @@
 Record while `python3 scripts/skucheck.py` is GREEN. Everything below is a real command with a
 real result; nothing is mocked. Suggested layout: terminal left, Basescan tab right.
 
+## The reproducible version (already recorded)
+
+`scripts/record_demo.sh` runs this walkthrough as a real terminal session and
+`evidence/demo.cast` is an asciinema recording of it — the paid bracket, the enclave, a SETTLE
+written to Base Sepolia, Agent A paying Agent B, and the NO_OVERLAP abort, exactly as they ran on
+2026-09-05 (every tx hash in the cast is on chain). `scripts/render_cast.py` turns the cast into a
+captioned MP4 with nothing but `pyte`, Pillow and ffmpeg, so anyone can regenerate the video from
+the repo:
+
+```bash
+pip install asciinema pyte pillow           # in a venv
+asciinema rec -c "scripts/record_demo.sh" evidence/demo.cast        # PAID=1 for the real bracket
+python3 scripts/render_cast.py evidence/demo.cast evidence/demo.mp4 --captions docs/VIDEO-CAPTIONS.json
+```
+
+The captions in `docs/VIDEO-CAPTIONS.json` are the narration below, keyed to the `### t=N` markers
+the recording prints. The rendered MP4 is attached to the GitHub release, not committed.
+
 | t | Say | Show |
 |---|---|---|
 | 0:00 | "Two agents want to trade. Each has a private reserve price. Today's agent commerce makes them either reveal it or trust a middleman who sees both. We seal both numbers in a Chainlink CRE confidential workflow instead." | README diagram |

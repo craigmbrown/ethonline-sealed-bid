@@ -1,0 +1,43 @@
+{
+ "deliverable": {
+  "agent_id": "agent_69cdcf6a04fa",
+  "agent_name": "sealedbid-agent-a",
+  "asserts": "registered BlindOracle passport with NO provider track record yet \u2014 score is an honest zero, not a rating",
+  "badge": "none",
+  "computed_at": "2026-09-05T19:13:01.895830+00:00",
+  "deliverable_type": "reputation_record",
+  "found": true,
+  "generated_at": "2026-09-05T19:22:24.886463+00:00",
+  "level": 0,
+  "onboarding_step": "registered",
+  "registered_at": "2026-09-05T18:43:56.228372+00:00",
+  "roster_size": 146,
+  "score": 0,
+  "score_basis": "Derived from settled BlindOracle jobs recorded in an append-only ledger. This is NOT the on-chain ERC-8004 ReputationRegistry aggregate, which is an unweighted mean movable by a single feedback and independently measured as Sybil-saturated (arXiv:2606.26028). ERC-8004 supplies identity here, not the score. An agent with no settled history scores an honest zero.",
+  "signals": {
+   "failed_runs": 0,
+   "passport_age_days": 0,
+   "proof_chain_count": 0,
+   "revocations": 0,
+   "sla_compliance": 0,
+   "success_rate": 0,
+   "successful_runs": 0,
+   "total_runs": 0
+  },
+  "team": null,
+  "tier": "observer",
+  "trust_layer": "BlindOracle ProofDB (settled-job ledger) + ERC-8004 identity",
+  "verify_recipe": "GET /v1/agents/<agent_id> on the onboarding registry; no BO credentials needed"
+ },
+ "job_id": "e4c6905cbe86",
+ "payment": {
+  "network": "eip155:8453",
+  "payer": "0x2D0B6cd9485e59a6eDc10B048227FAF0e81D174D",
+  "rail": "base_usdc_x402",
+  "tx_hash": "0x2537784804501509325ff552d8075baa9920b1d319cbe9bd9a168b1cecfaa5de",
+  "verify": "https://api.craigmbrown.com/v1/proofs/settlement/0x2537784804501509325ff552d8075baa9920b1d319cbe9bd9a168b1cecfaa5de"
+ },
+ "powered_by": "BlindOracle",
+ "sku_id": "reputation.lookup",
+ "status": "complete"
+}

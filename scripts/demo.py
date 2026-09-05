@@ -154,12 +154,22 @@ def run_enclave(buyer_max: float, seller_min: float, salt_a: str, salt_b: str, b
 # ─── Chain reads / the A → B transfer ──────────────────────────────────────
 
 
-def read_receiver(run_id: str, receiver: str = SIM_RECEIVER) -> dict[str, Any]:
+def read_receiver(run_id: str, receiver: str = SIM_RECEIVER, settlement_tx: str | None = None) -> dict[str, Any]:
+    """Read the SETTLE record back. If the settlement tx hash is known, wait for it to be mined
+    first — the simulator returns as soon as the forwarder tx is submitted, and a read in the
+    same second sees the pre-settlement state (measured: clearing=0, then the row appeared)."""
     from web3 import Web3
 
     w3 = Web3(Web3.HTTPProvider(BASE_SEPOLIA_RPC, request_kwargs={"timeout": 60}))
+    if settlement_tx and int(settlement_tx, 16) != 0:
+        w3.eth.wait_for_transaction_receipt(settlement_tx, timeout=180)
     c = w3.eth.contract(address=Web3.to_checksum_address(receiver), abi=RECEIVER_ABI)
     s = c.functions.getSettlement(bytes.fromhex(run_id[2:])).call()
+    for _ in range(12):  # RPC nodes can lag the receipt by a block or two
+        if int(s[3]) != 0:
+            break
+        time.sleep(5)
+        s = c.functions.getSettlement(bytes.fromhex(run_id[2:])).call()
     return {"receiver": receiver, "clearing_price_micro": int(s[0]), "commitment_a": "0x" + bytes(s[1]).hex(),
             "commitment_b": "0x" + bytes(s[2]).hex(), "recorded_at": int(s[3]), "settlement_count": int(c.functions.settlementCount().call())}
 
@@ -175,7 +185,8 @@ def settle_transfer(clearing_price_micro: int, run_id: str, payer_key: str, paye
     acct = Account.from_key(payer_key)
     tx = {
         "to": Web3.to_checksum_address(payee), "value": clearing_price_micro, "data": bytes.fromhex(run_id[2:]),
-        "nonce": w3.eth.get_transaction_count(acct.address), "chainId": w3.eth.chain_id,
+        # "pending": the simulator's own broadcast from this key may still be in the mempool
+        "nonce": w3.eth.get_transaction_count(acct.address, "pending"), "chainId": w3.eth.chain_id,
         "maxFeePerGas": w3.eth.gas_price * 2, "maxPriorityFeePerGas": w3.eth.gas_price,
     }
     tx["gas"] = int(w3.eth.estimate_gas({**tx, "from": acct.address}) * 1.2)
@@ -255,7 +266,7 @@ def main() -> int:
     settle: dict[str, Any] = {"outcome": sim["outcome"]}
     if sim["outcome"] == "SETTLE":
         if args.broadcast and sim["settlement_tx"]:
-            onchain = read_receiver(sim["run_id"], sim["receiver"] or SIM_RECEIVER)
+            onchain = read_receiver(sim["run_id"], sim["receiver"] or SIM_RECEIVER, sim["settlement_tx"])
             match = onchain["clearing_price_micro"] == round(sim["clearing_price"] * PRICE_SCALE)
             print(f"  {'settle':15} receiver {onchain['receiver'][:10]}… holds clearing={onchain['clearing_price_micro']} micro "
                   f"({'matches' if match else 'MISMATCH'}) recordedAt={onchain['recorded_at']} count={onchain['settlement_count']}")
