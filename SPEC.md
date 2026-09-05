@@ -93,11 +93,35 @@ demo. The `Process-Followed Attestation` expects:
 ```
 declared_process: { ordered: true, required: [{id: "vet_a"}, {id: "vet_b"}, {id: "bracket_open"},
                     {id: "seal"}, {id: "settle_or_abort"}, {id: "bracket_close"}] }
-run_evidence: [ {step_id, ts, prev_sha256, hmac, ...}, ... ]   # hash-chained, HMAC-signed
+run_evidence: [ {step_id, ts, prev_sha256, signature, sig_scheme, pubkey, ...}, ... ]
 ```
 
-The HMAC key is a Vault secret; the chain makes the evidence tamper-evident (not
-identity-proving — the pubkey travels in the record).
+Records are emitted in the **RAP-1 wire format**
+(<https://craigmbrown.com/blindoracle/resolution-attestation-profile.html> §7):
+canonical JSON (sorted keys, no whitespace, non-ASCII escaped), `prev_sha256` over the
+previous record minus its four signature fields, and a signature over the record minus
+the same.
+
+**Signed with ed25519** (`EVIDENCE_ED25519_PRIVATE_KEY`, gitignored). The public key is
+published at `evidence/signing-key.pub`:
+
+```
+c151a183da6f5b52a141bbedb55218d048bd09649fe37560459be373913da6c2
+```
+
+A public key cannot sign, so a third party can verify a bundle without being able to
+produce one, and the attestation reports `signature_binding: attributable`. Runs with
+no key configured fall back to `hmac-sha256`, where the verification key travels in the
+record and can also sign — tamper-evident, attributing nothing
+(`signature_binding: tamper_evident_only`). The run announces which scheme it used; it
+never downgrades silently.
+
+**What this does and does not establish.** Nobody but the keyholder can produce a bundle
+that verifies against the published key, and a bundle substituted from another run is
+detectable. It does **not** establish who the keyholder is: the key is published by this
+repo, which we control, so the identity behind it is self-asserted. Binding it to a
+third-party registry is out of scope here — the ERC-8004 validation registry that would
+be its natural home is not deployed on any chain (RAP-1 §8.1).
 
 ## 2.5 Prize qualification — Chainlink "Best Confidential Workflow" ($2,000; up to 2 teams × $1,000)
 
@@ -224,11 +248,13 @@ DISCLOSURE.md                  pre-existing work + AI assistance statement
    receiver records the price the agents are bound to; it does not custody funds.)
 7. Security review before each push: no secrets, no private-repo references, real history.
 8. *(optional)* Dispute routing + process attestation per §2.4.
-   (Partially done 2026-09-05. Process attestation is bought by `scripts/demo.py --attest` over the
-   hash-chained, HMAC-signed evidence records; the service returned `non_conformant` — A1 steps
-   present, A2 order and A4 timeline **pass**, A6 chain linkage **fail**, A7 signatures
-   **unverifiable** — because the record format it verifies for A6/A7 is not published to callers.
-   Recorded as-is in `EVIDENCE.md`; not retried by guessing. Dispute routing is built and tested
+   (Done 2026-09-05. Process attestation is bought by `scripts/demo.py --attest`. The first run
+   returned `non_conformant` — A6 chain linkage **fail**, A7 signatures **unverifiable** — because
+   the record format the service verifies for A6/A7 was not published to callers; recorded as-is
+   in `EVIDENCE.md` and not retried by guessing. BlindOracle then published it as RAP-1 §7, our
+   producer was corrected to match, and the chain moved to ed25519. Re-run over the wire:
+   **`conformant`, A6 pass, A7 pass, `signature_binding: attributable`**
+   (tx `0xa562f6f727264c49cee661adbc05bbb08d71692ad28b37ecc7f611bcf27a1fc9`). Dispute routing is built and tested
    (`bo_client.dispute`, evidence rule enforced, $5 opt-in) but not exercised: a real dispute costs
    5 USDC on mainnet and there is no contested outcome to adjudicate.)
 9. Submission: README architecture diagram, 3-minute video recorded while `skucheck` is

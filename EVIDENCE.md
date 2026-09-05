@@ -366,6 +366,45 @@ SPEC §2.4 claim and is left as a deliberate decision, not slipped in.
 
 The on-chain records above remain the load-bearing evidence.
 
+#### Adopted ed25519 — **`conformant` + `attributable`** (2026-09-05)
+
+The re-run above was `conformant` but `signature_binding: tamper_evident_only`: under
+`hmac-sha256` the verification key travels inside the record and can also sign, so the
+bundle proved it had not been altered and attributed nothing. RAP-1 v1.1.0 added an
+asymmetric scheme, and the evidence chain now uses it.
+
+The public key is published in this repo at `evidence/signing-key.pub` and in SPEC §2.4:
+
+```
+c151a183da6f5b52a141bbedb55218d048bd09649fe37560459be373913da6c2
+```
+
+The private key lives only in the gitignored `.env`. Re-run over the wire, paid:
+
+```
+sku=security.process-attestation price_usd=0.25 status=200 result=ok
+tx=0xa562f6f727264c49cee661adbc05bbb08d71692ad28b37ecc7f611bcf27a1fc9
+verdict=conformant  signature_binding=attributable  taxonomy_version=1.1.0
+  A1 pass · A2 pass · A3 n/a · A4 pass · A5 n/a · A6 pass · A7 pass
+  A7 detail: "every submitted signature verifies under ed25519 — evidence is
+              attributable to the holder of the private key"
+```
+
+Checked alongside it: a record whose signature is replaced returns `non_conformant`
+with A7 `fail`; a run with no key configured falls back to `hmac-sha256` and reports
+`tamper_evident_only` rather than silently claiming attribution; and the constructor
+refuses to start if the configured key does not match the published one, so a run
+cannot produce a bundle a verifier was told to reject.
+
+**Read the claim narrowly.** ed25519 means nobody but the keyholder can produce a bundle
+that verifies against the published key, and a bundle substituted from a different run
+is detectable — a real improvement over the symmetric scheme. It does **not** establish
+*who* the keyholder is: this repo publishes the key and we control this repo, so the
+identity behind it remains self-asserted. And it changes nothing about `evidence_basis:
+buyer_supplied_unverified` — the records are still our own account of what happened, and
+a fabricated but correctly signed log would score identically. The on-chain records
+remain the load-bearing evidence.
+
 ### Test suites at this commit
 
 ```

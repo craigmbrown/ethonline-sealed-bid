@@ -89,55 +89,115 @@ def _rap1_bytes(rec: dict[str, Any], exclude: tuple[str, ...]) -> bytes:
     return rap1_canonical({k: v for k, v in rec.items() if k not in exclude})
 
 
+SIGNING_KEY_PUB_PATH = Path(__file__).resolve().parent.parent / "evidence" / "signing-key.pub"
+
+
+def published_signing_pubkey() -> str | None:
+    """The ed25519 public key this repo publishes, or None. Reading it lets a run
+    assert that what it signed with is what a verifier was told to expect."""
+    try:
+        return SIGNING_KEY_PUB_PATH.read_text().strip() or None
+    except OSError:
+        return None
+
+
 class EvidenceChain:
-    """Hash-chained, HMAC-signed, tamper-evident — emitted in the RAP-1 wire format
+    """Hash-chained, signed, RAP-1 wire format
     (https://craigmbrown.com/blindoracle/resolution-attestation-profile.html §7).
 
     Previously this used the field name `hmac`, hashed the FULL previous record, and
     keyed the HMAC with `bytes.fromhex(key)`. All three differ from the published
     profile, so `security.process-attestation` returned A6 `chain_broken` and A7
-    `no signed records submitted` on 2026-09-05 — recorded in EVIDENCE.md. The
-    profile's §7 recipe was unpublished at the time; it is published now, so this
-    conforms to it rather than guessing.
+    `no signed records submitted` on 2026-09-05 — recorded in EVIDENCE.md.
 
-    The per-run key travels in the record as `pubkey`, so the chain is tamper-evident
-    but NOT identity-proving — SPEC §2.4, and RAP-1 reports it as
-    `signature_binding: tamper_evident_only`. RAP-1 v1.1.0 also defines an `ed25519`
-    scheme that IS attributable; adopting it would change the SPEC §2.4 claim and is
-    deliberately left as an operator decision."""
+    Signature scheme (SPEC §2.4):
+
+    * **ed25519** when `EVIDENCE_ED25519_PRIVATE_KEY` is set — the default for our runs.
+      The public key is published at `evidence/signing-key.pub` and cannot sign, so a
+      third party can verify a bundle without being able to forge one. RAP-1 reports
+      `signature_binding: attributable`.
+    * **hmac-sha256** otherwise, so a fresh clone with no key still produces a valid
+      chain. There the verification key travels inside the record and can also sign, so
+      the bundle is tamper-evident but attributes nothing —
+      `signature_binding: tamper_evident_only`.
+
+    ⚠️ What ed25519 buys, precisely: nobody but the keyholder can produce a bundle that
+    verifies against the published key, and a substituted bundle from a later run is
+    detectable. It does NOT establish who the keyholder is — the key is published by
+    this repo, which we control, so identity here is self-asserted. Binding it to a
+    third-party registry is a separate problem (RAP-1 §8.1)."""
 
     def __init__(self, secret: str, run_label: str) -> None:
-        self.key = hashlib.sha256((secret + "|" + run_label).encode()).hexdigest()
         self.records: list[dict[str, Any]] = []
+        priv = (os.environ.get("EVIDENCE_ED25519_PRIVATE_KEY") or "").strip()
+        self._sk = None
+        if priv:
+            try:
+                from cryptography.hazmat.primitives import serialization as _ser
+                from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+                self._sk = Ed25519PrivateKey.from_private_bytes(bytes.fromhex(priv))
+                self.scheme = "ed25519"
+                self.key = self._sk.public_key().public_bytes(
+                    _ser.Encoding.Raw, _ser.PublicFormat.Raw).hex()
+            except Exception as exc:  # bad hex, wrong length, library absent
+                # Fail LOUD rather than silently downgrading: a run that believes it is
+                # attributable and is not would misrepresent its own evidence.
+                raise SystemExit(
+                    f"EVIDENCE_ED25519_PRIVATE_KEY is set but unusable ({type(exc).__name__}). "
+                    f"Fix it or unset it to fall back to hmac-sha256.") from exc
+            expected = published_signing_pubkey()
+            if expected and expected != self.key:
+                raise SystemExit(
+                    "signing key does not match the published evidence/signing-key.pub — "
+                    "a verifier told to expect the published key would reject this run.")
+        else:
+            self.scheme = "hmac-sha256"
+            self.key = hashlib.sha256((secret + "|" + run_label).encode()).hexdigest()
+
+    def _sign(self, payload: bytes) -> str:
+        if self._sk is not None:
+            return self._sk.sign(payload).hex()
+        # RAP-1 §7.3: the HMAC key is the `pubkey` STRING, UTF-8 encoded — not the
+        # hex-decoded bytes. Matching this byte-for-byte is required or A7 fails.
+        return hmac.new(self.key.encode("utf-8"), payload, hashlib.sha256).hexdigest()
 
     def append(self, step_id: str, **detail: Any) -> dict[str, Any]:
         rec: dict[str, Any] = {"step_id": step_id, "ts": now_iso(), **detail}
         if self.records:
             rec["prev_sha256"] = hashlib.sha256(
                 _rap1_bytes(self.records[-1], _RAP1_CHAIN_EXCLUDE)).hexdigest()
-        # RAP-1 §7.3: the HMAC key is the `pubkey` STRING, UTF-8 encoded — not the
-        # hex-decoded bytes. Matching this byte-for-byte is required or A7 fails.
-        rec["signature"] = hmac.new(
-            self.key.encode("utf-8"), _rap1_bytes(rec, _RAP1_SIG_EXCLUDE), hashlib.sha256).hexdigest()
-        rec["sig_scheme"] = "hmac-sha256"
+        rec["signature"] = self._sign(_rap1_bytes(rec, _RAP1_SIG_EXCLUDE))
+        rec["sig_scheme"] = self.scheme
         rec["pubkey"] = self.key
         self.records.append(rec)
         return rec
 
     @staticmethod
     def verify(records: list[dict[str, Any]]) -> bool:
-        """Local check using the same rules the remote verifier applies."""
+        """Local check using the same rules the remote verifier applies. An
+        unsupported scheme or unusable key material returns False here rather than
+        silently passing — this is our own chain, so we know what it should be."""
         for idx, rec in enumerate(records):
             if idx > 0:
                 expect_prev = hashlib.sha256(
                     _rap1_bytes(records[idx - 1], _RAP1_CHAIN_EXCLUDE)).hexdigest()
                 if rec.get("prev_sha256") != expect_prev:
                     return False
-            expect_sig = hmac.new(
-                str(rec.get("pubkey", "")).encode("utf-8"),
-                _rap1_bytes(rec, _RAP1_SIG_EXCLUDE), hashlib.sha256).hexdigest()
-            if not hmac.compare_digest(expect_sig, str(rec.get("signature", ""))):
-                return False
+            payload = _rap1_bytes(rec, _RAP1_SIG_EXCLUDE)
+            pubkey = str(rec.get("pubkey", ""))
+            sig = str(rec.get("signature", ""))
+            scheme = rec.get("sig_scheme") or "hmac-sha256"
+            if scheme == "ed25519":
+                try:
+                    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
+                    Ed25519PublicKey.from_public_bytes(bytes.fromhex(pubkey)).verify(
+                        bytes.fromhex(sig), payload)
+                except Exception:  # bad signature, bad hex, or library absent
+                    return False
+            else:
+                expect = hmac.new(pubkey.encode("utf-8"), payload, hashlib.sha256).hexdigest()
+                if not hmac.compare_digest(expect, sig):
+                    return False
         return True
 
 

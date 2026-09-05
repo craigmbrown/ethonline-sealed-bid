@@ -1,0 +1,88 @@
+{
+ "deliverable": {
+  "attestation_id": "70b1cb1896e6f236f5656a855e4a9780",
+  "bo_trust": {
+   "ai_disclosure": "Not AI-generated: this content was retrieved from the named source or computed deterministically. No language model produced it.",
+   "ai_generated": false,
+   "ai_model": null,
+   "content_scanned": true,
+   "content_sha256": "70b1cb1896e6f236f5656a855e4a978029b3136dd6af9729b7557b1c73bddfac",
+   "powered_by": "BlindOracle",
+   "retrieved_at": "2026-09-05T21:44:56.750917+00:00",
+   "scanner": "camel-l1 (RQ-173)",
+   "source": "buyer_supplied_process_and_evidence"
+  },
+  "checks": [
+   {
+    "detail": "all declared steps found in evidence",
+    "id": "A1",
+    "name": "required steps present",
+    "verdict": "pass"
+   },
+   {
+    "detail": "evidence order matches declared order",
+    "id": "A2",
+    "name": "declared order honored",
+    "verdict": "pass"
+   },
+   {
+    "detail": "no step declares a predicate",
+    "id": "A3",
+    "name": "predicate recomputation",
+    "verdict": "not_applicable"
+   },
+   {
+    "detail": "timestamps monotonic and within window",
+    "id": "A4",
+    "name": "timeline consistency",
+    "verdict": "pass"
+   },
+   {
+    "detail": "no forbidden steps declared",
+    "id": "A5",
+    "name": "forbidden steps absent",
+    "verdict": "not_applicable"
+   },
+   {
+    "detail": "prev_sha256 chain verified for every linked record",
+    "id": "A6",
+    "name": "evidence chain linkage",
+    "verdict": "pass"
+   },
+   {
+    "binding": "attributable",
+    "detail": "every submitted signature verifies under ed25519 \u2014 evidence is attributable to the holder of the private key",
+    "id": "A7",
+    "name": "signature verification",
+    "verdict": "pass"
+   }
+  ],
+  "checks_fail": 0,
+  "checks_pass": 5,
+  "checks_scored": 5,
+  "checks_total": 7,
+  "checks_unverifiable": 0,
+  "deliverable_type": "process_attestation",
+  "evidence_basis": "buyer_supplied_unverified",
+  "generated_at": "2026-09-05T21:44:56.750939+00:00",
+  "limitation": "This attestation proves the submitted run_evidence is internally consistent with the declared_process \u2014 it does NOT prove the evidence is a true record of what happened. A fabricated but internally consistent log scores identically to a genuine one. The word 'verified' does not apply to the underlying event; only the consistency check itself is deterministic and re-computable.",
+  "remediation_path": {
+   "note": "Ground truth requires proofs emitted AT EXECUTION TIME by an emitter the buyer does not control (e.g. this fleet's own ProofOfDeterministicFiring / 30110 rail), not recomputed after the fact from a submitted log. Ask about SDK-side runtime proof emission for that stronger guarantee."
+  },
+  "signature_binding": "attributable",
+  "status": "ok",
+  "taxonomy_version": "1.1.0",
+  "verdict": "conformant"
+ },
+ "job_id": "3e16cfb4a3e1",
+ "payment": {
+  "network": "eip155:8453",
+  "payer": "0x2D0B6cd9485e59a6eDc10B048227FAF0e81D174D",
+  "rail": "base_usdc_x402",
+  "tx_hash": "0xa562f6f727264c49cee661adbc05bbb08d71692ad28b37ecc7f611bcf27a1fc9",
+  "verify": "https://api.craigmbrown.com/v1/proofs/settlement/0xa562f6f727264c49cee661adbc05bbb08d71692ad28b37ecc7f611bcf27a1fc9"
+ },
+ "powered_by": "BlindOracle",
+ "sku_id": "security.process-attestation",
+ "status": "complete"
+}
