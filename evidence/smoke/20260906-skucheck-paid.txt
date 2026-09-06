@@ -1,0 +1,17 @@
+# Sep-6 PAID smoke test — skucheck --paid
+# run 2026-09-06T14:14:40Z
+
+bo-value sku=reputation.lookup price_usd=0.01 status=200 result=ok proof_id=93c97bdbf452 tx=0x48c1b3698371bdfd113b58873808f456a5b3610a77e401254d2abc301f60d7c7 changed_outcome=None skucheck --paid
+skucheck against https://api.craigmbrown.com
+  ✓ reputation.lookup                    $0.01
+  ✓ agent.trust-badge                    $0.01
+  ✓ agent.prehire-check                  $0.25
+  ✓ security.process-attestation         $0.25
+  ✓ arbitration.dispute-settlement       $5.0
+  · dispute disclosure: adjudicator=blindoracle_operator_panel neutrality=unilateral
+  ✓ 402 challenge: exact, Base mainnet, amount=10000 (micro-USDC), payTo=0x5E709929A4AB69eC3a8811d03417869059BC4EB9, asset=USDC
+  ✓ proof rail up: 1148 settlements scanned, latest kind 30120
+  ✓ payer 0x2D0B6cd9485e59a6eDc10B048227FAF0e81D174D holds 6.81 USDC on Base; one bracket costs $0.52
+  ✓ paid probe ok: tx=0x48c1b3698371bdfd113b58873808f456a5b3610a77e401254d2abc301f60d7c7 proof_id=93c97bdbf452 sha256=None
+  ✓ proof rail row for the tx: status 200 kind None rail None
+GREEN — the paid path is live
