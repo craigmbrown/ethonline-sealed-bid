@@ -1,0 +1,107 @@
+{
+ "agent_a": "sealedbid-agent-a",
+ "agent_b": "sealedbid-agent-b",
+ "evidence_chain": [
+  {
+   "actor": "sealedbid-agent-a",
+   "counterparty": "sealedbid-agent-b",
+   "prehire_tx": null,
+   "prehire_verdict": null,
+   "pubkey": "c151a183da6f5b52a141bbedb55218d048bd09649fe37560459be373913da6c2",
+   "reputation_tx": null,
+   "sig_scheme": "ed25519",
+   "signature": "c225ac15366403585819550628ca68e9570a1bf1e0f3ff2353996fff98ec1dcf8214adb685d7cecc83a8523bbfacaa61d1b29cfddeef8714e9eb4fb76b515b0d",
+   "step_id": "vet_a",
+   "ts": "2026-09-05T22:18:32Z"
+  },
+  {
+   "actor": "sealedbid-agent-b",
+   "counterparty": "sealedbid-agent-a",
+   "prehire_tx": null,
+   "prehire_verdict": null,
+   "prev_sha256": "265005fcec1bc0a312c0ce72a9de199ef7ef07b7dca4b2c0656a234c13bd0fea",
+   "pubkey": "c151a183da6f5b52a141bbedb55218d048bd09649fe37560459be373913da6c2",
+   "reputation_tx": null,
+   "sig_scheme": "ed25519",
+   "signature": "5c6397466857714ba35c3e7cec252ee965ee5d4205d4a50e898ee733a31cb6e61baf46db008c9d57e60d14eb5079b61153cc87675bdfde9cf6978ceefe226a02",
+   "step_id": "vet_b",
+   "ts": "2026-09-05T22:18:32Z"
+  },
+  {
+   "actor": "sealedbid-agent-a",
+   "badge_tx": null,
+   "prev_sha256": "54949975e6f696c2920e954c848e8486ccd9c4446b655d8803f664a13c98f42e",
+   "pubkey": "c151a183da6f5b52a141bbedb55218d048bd09649fe37560459be373913da6c2",
+   "sig_scheme": "ed25519",
+   "signature": "cee0b29c02dfce35f5c038fbdb920a853f23ffcf6a3461b28c33f7f6c9d6a2ac5536125f3102a2e446d0227f8bd9afe1604d63a19f34272668c75ac4bf79ff0f",
+   "step_id": "bracket_open",
+   "ts": "2026-09-05T22:18:32Z"
+  },
+  {
+   "broadcast": false,
+   "clearing_price": 105.0,
+   "commitment_a": "0x0dd952fbd318fb56b2151b6104a6c97056c9757bd9995e657763a2dd589ebea1",
+   "commitment_b": "0xac1835743018aaaaf36288a6fd559c4f48cc2b09b4a30513c087538737c74bc9",
+   "outcome": "SETTLE",
+   "prev_sha256": "3165b3aed324a2046c8f10ab4235a18a174dd1494da4ab357caf0887456dfae3",
+   "pubkey": "c151a183da6f5b52a141bbedb55218d048bd09649fe37560459be373913da6c2",
+   "run_id": "0x98eeac4e94c52cc6fa55bd30f493e3b6504a57d8377818b2d44ba67aed095876",
+   "settlement_tx": "0x0000000000000000000000000000000000000000000000000000000000000000",
+   "sig_scheme": "ed25519",
+   "signature": "aaf484428abf6e9000a33213a6f6f15450eaded075c8f1724971f0683a82004c22f65b3e61aec40dca3b25acaddcb4f207ee4bdb763232b95817938c2d9f9707",
+   "step_id": "seal",
+   "ts": "2026-09-05T22:18:48Z"
+  },
+  {
+   "outcome": "SETTLE",
+   "prev_sha256": "7b20a808ee2ef42d83acc2ce35c91047a5793b158b77971d2c46e963dbe2e7fc",
+   "pubkey": "c151a183da6f5b52a141bbedb55218d048bd09649fe37560459be373913da6c2",
+   "receiver_clearing_micro": null,
+   "sig_scheme": "ed25519",
+   "signature": "4c8a69ab80f24d9d8406b12ebb7e54adb6f570a535329cf968d93e58ec2e7b7fd57c5b6541559b3c51043fdc8f5cfe8b60a146f8eabc0ccf09fe80038274f104",
+   "step_id": "settle_or_abort",
+   "ts": "2026-09-05T22:18:48Z"
+  },
+  {
+   "actor": "sealedbid-agent-a",
+   "counterparty": "sealedbid-agent-b",
+   "prev_sha256": "0d888ad246efbaf845eeffd3a07813304253210f9b72be5555baa386d8a3381a",
+   "pubkey": "c151a183da6f5b52a141bbedb55218d048bd09649fe37560459be373913da6c2",
+   "reputation_tx": null,
+   "sig_scheme": "ed25519",
+   "signature": "d41cfeeb243c88ce8347c494d45ea103920059c1a28bc5a334965c570faa42e5f31f7cda5935061032b0a2dee2d1026712da1eec632428dd8dbe97ee88044d0d",
+   "step_id": "bracket_close",
+   "ts": "2026-09-05T22:18:48Z"
+  }
+ ],
+ "evidence_chain_verifies": true,
+ "finished": "2026-09-05T22:18:48Z",
+ "run_label": "demo-1788646712",
+ "seal": {
+  "clearing_price": 105.0,
+  "commitment_a": "0x0dd952fbd318fb56b2151b6104a6c97056c9757bd9995e657763a2dd589ebea1",
+  "commitment_b": "0xac1835743018aaaaf36288a6fd559c4f48cc2b09b4a30513c087538737c74bc9",
+  "exit_code": 0,
+  "outcome": "SETTLE",
+  "receiver": "0xA2eB7d6EEd6a4d0976cb29B226093E007E720590",
+  "result_line": "SETTLE @ 105 (run: simulation) tx: 0x0000000000000000000000000000000000000000000000000000000000000000",
+  "run_id": "0x98eeac4e94c52cc6fa55bd30f493e3b6504a57d8377818b2d44ba67aed095876",
+  "settlement_tx": "0x0000000000000000000000000000000000000000000000000000000000000000"
+ },
+ "settle_or_abort": {
+  "outcome": "SETTLE"
+ },
+ "started": "2026-09-05T22:18:32Z",
+ "steps": {
+  "bracket_close": null,
+  "bracket_open": null,
+  "vet_a": {
+   "prehire": null,
+   "reputation": null
+  },
+  "vet_b": {
+   "prehire": null,
+   "reputation": null
+  }
+ }
+}

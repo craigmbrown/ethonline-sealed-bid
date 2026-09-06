@@ -1,0 +1,203 @@
+{
+ "agent_a": "sealedbid-agent-a",
+ "agent_b": "sealedbid-agent-b",
+ "evidence_chain": [
+  {
+   "actor": "sealedbid-agent-a",
+   "counterparty": "sealedbid-agent-b",
+   "prehire_tx": "0xbc62380734ec0481e17df15e8cf2d5a1f95044b1afe2d8f3e71c83482b6f7406",
+   "prehire_verdict": "CAUTION",
+   "pubkey": "c151a183da6f5b52a141bbedb55218d048bd09649fe37560459be373913da6c2",
+   "reputation_tx": "0x5e70ae2214d02c2255219504e80d9283ec4ebcdd401979d3166eb9c59b530e73",
+   "sig_scheme": "ed25519",
+   "signature": "917321c56350aba101aef8188a51b6ecb2c4480e7c06d9c8028c5b2b8cb4047ad7afad749e4bc36857f7fcbf72b2eb7fb6bae22a8e716ff6f2fafd23c240dc0e",
+   "step_id": "vet_a",
+   "ts": "2026-09-05T22:24:41Z"
+  },
+  {
+   "actor": "sealedbid-agent-b",
+   "counterparty": "sealedbid-agent-a",
+   "prehire_tx": "0x37208c28f05112c9e02cf62203fb6919256fb279c065229b3079875339672c51",
+   "prehire_verdict": "CAUTION",
+   "prev_sha256": "ef60a57f1ec090b6a4d930013a890d3f35444d12dfceaff7c8dafd3404a18c7e",
+   "pubkey": "c151a183da6f5b52a141bbedb55218d048bd09649fe37560459be373913da6c2",
+   "reputation_tx": "0xa9e2373ae98654e00379ac0c9765de94d6900cdad9aba2704cf4fcd64479e2aa",
+   "sig_scheme": "ed25519",
+   "signature": "2b8d5067da2d370c3e52ceddeb39564e24d1248a837f58f9d86ca1d2a5b0ef841fd80027f976fe494dca83886c4af4437f036fc29c7f0ab89f2a4a862bc77f03",
+   "step_id": "vet_b",
+   "ts": "2026-09-05T22:24:44Z"
+  },
+  {
+   "actor": "sealedbid-agent-a",
+   "badge_tx": "0x6d81005c45e4388dabe63b59ffc692ab4167adb2b09bf96d5043d77c971af960",
+   "prev_sha256": "556b52c75abfb84ff33a45b1eabe26cd3b1ff9a305d9f672f0c7a22203fb20be",
+   "pubkey": "c151a183da6f5b52a141bbedb55218d048bd09649fe37560459be373913da6c2",
+   "sig_scheme": "ed25519",
+   "signature": "1475823d20004e4a47b8c65e2b21da1d8a70781396c24ce5d6a9a676f27f21184d6087b3e8b7cf66b1625894cd182eab5f8c3a6fc3446e2a10dab7e9847b480a",
+   "step_id": "bracket_open",
+   "ts": "2026-09-05T22:24:45Z"
+  },
+  {
+   "broadcast": true,
+   "clearing_price": 105.0,
+   "commitment_a": "0xa51cab2efb2742836d871e32e954e99b109dbd501b1863bff6e8398782b83acd",
+   "commitment_b": "0xe995d030e27749266cbed44051672bdc1df16122ef8d57bb69fad50ab02152e0",
+   "outcome": "SETTLE",
+   "prev_sha256": "a657cc84235374240007b1b6982bc093519cf99b7c2ccb4215c7fed3383ae34c",
+   "pubkey": "c151a183da6f5b52a141bbedb55218d048bd09649fe37560459be373913da6c2",
+   "run_id": "0x0e2ba736de8dcffc26796a7872ecd422319ff0ba06e66eef688df420ea4da7fe",
+   "settlement_tx": "0x65089bff619d6dee0619115aeaf8ab59460e1b05abde49839354ef84857f1b23",
+   "sig_scheme": "ed25519",
+   "signature": "6b2cb56add3d4e30ab3d3b40d9078a9d27cf255abe42aabbace88fc2ca45a75a801bbb7cefd3b691de0e1f5828fcdb978ada77e75c51db74e2cf3994d0994e04",
+   "step_id": "seal",
+   "ts": "2026-09-05T22:24:56Z"
+  },
+  {
+   "outcome": "SETTLE",
+   "prev_sha256": "14c201e48bb9b36421608b0720c233bdd50f4e58c495b0b2e9ca1c3a63ddd102",
+   "pubkey": "c151a183da6f5b52a141bbedb55218d048bd09649fe37560459be373913da6c2",
+   "receiver_clearing_micro": 105000000,
+   "receiver_matches_enclave": true,
+   "sig_scheme": "ed25519",
+   "signature": "5d36562f573cd718491bd8c120a6caa6fb7bf322aff2deda37a77f6ad8f2ef545fd831aed166f06a612675a19d6b98c15e816b83716326792369d50bbff49805",
+   "step_id": "settle_or_abort",
+   "transfer": {
+    "block": 46439408,
+    "from": "0x2D0B6cd9485e59a6eDc10B048227FAF0e81D174D",
+    "status": 1,
+    "to": "0xaE4B357dBf9127b17050a0128Dc146fa31bE89c1",
+    "tx": "0xe8034add737304b0c5fd371a1e4c7868bba61da62104555fc8f1e69c1bd32917",
+    "value_wei": 105000000
+   },
+   "ts": "2026-09-05T22:25:02Z"
+  },
+  {
+   "actor": "sealedbid-agent-a",
+   "counterparty": "sealedbid-agent-b",
+   "prev_sha256": "0b27cdb801762a1b9bea5ba533973aaa0fd926eb67a3e5c0b7834378bc7b38fa",
+   "pubkey": "c151a183da6f5b52a141bbedb55218d048bd09649fe37560459be373913da6c2",
+   "reputation_tx": "0x3986af4b9e6f68f4f7f7758d2452d7e5f40a257770310148a1f882c741503a68",
+   "sig_scheme": "ed25519",
+   "signature": "969e807369cb58955551d0f802981280e6a9cc2f27510552b603c012352abf094d498deca52e84453fd629a3cd71e38ed4ac6d37e5a40c1f5b34a54d56e34f01",
+   "step_id": "bracket_close",
+   "ts": "2026-09-05T22:25:04Z"
+  }
+ ],
+ "evidence_chain_verifies": true,
+ "finished": "2026-09-05T22:25:04Z",
+ "run_label": "demo-1788647078",
+ "seal": {
+  "clearing_price": 105.0,
+  "commitment_a": "0xa51cab2efb2742836d871e32e954e99b109dbd501b1863bff6e8398782b83acd",
+  "commitment_b": "0xe995d030e27749266cbed44051672bdc1df16122ef8d57bb69fad50ab02152e0",
+  "exit_code": 0,
+  "outcome": "SETTLE",
+  "receiver": "0xA2eB7d6EEd6a4d0976cb29B226093E007E720590",
+  "result_line": "SETTLE @ 105 (run: simulation) tx: 0x65089bff619d6dee0619115aeaf8ab59460e1b05abde49839354ef84857f1b23",
+  "run_id": "0x0e2ba736de8dcffc26796a7872ecd422319ff0ba06e66eef688df420ea4da7fe",
+  "settlement_tx": "0x65089bff619d6dee0619115aeaf8ab59460e1b05abde49839354ef84857f1b23"
+ },
+ "settle_or_abort": {
+  "outcome": "SETTLE",
+  "receiver_matches_enclave": true,
+  "receiver_read": {
+   "clearing_price_micro": 105000000,
+   "commitment_a": "0xa51cab2efb2742836d871e32e954e99b109dbd501b1863bff6e8398782b83acd",
+   "commitment_b": "0xe995d030e27749266cbed44051672bdc1df16122ef8d57bb69fad50ab02152e0",
+   "receiver": "0xA2eB7d6EEd6a4d0976cb29B226093E007E720590",
+   "recorded_at": 1788647098,
+   "settlement_count": 7
+  },
+  "transfer": {
+   "block": 46439408,
+   "from": "0x2D0B6cd9485e59a6eDc10B048227FAF0e81D174D",
+   "status": 1,
+   "to": "0xaE4B357dBf9127b17050a0128Dc146fa31bE89c1",
+   "tx": "0xe8034add737304b0c5fd371a1e4c7868bba61da62104555fc8f1e69c1bd32917",
+   "value_wei": 105000000
+  }
+ },
+ "started": "2026-09-05T22:24:39Z",
+ "steps": {
+  "bracket_close": {
+   "deliverable_brief": {
+    "badge": "none",
+    "found": true,
+    "score": 0
+   },
+   "job_id": "ddd8fec48187",
+   "price_usd": 0.01,
+   "sku": "reputation.lookup",
+   "status": 200,
+   "tx_hash": "0x3986af4b9e6f68f4f7f7758d2452d7e5f40a257770310148a1f882c741503a68"
+  },
+  "bracket_open": {
+   "deliverable_brief": {
+    "badge_label": "UNVERIFIED"
+   },
+   "job_id": "7363374bdb47",
+   "price_usd": 0.01,
+   "sku": "agent.trust-badge",
+   "status": 200,
+   "tx_hash": "0x6d81005c45e4388dabe63b59ffc692ab4167adb2b09bf96d5043d77c971af960"
+  },
+  "vet_a": {
+   "prehire": {
+    "deliverable_brief": {
+     "red_flags": [
+      "not_audited",
+      "no_delivery_history",
+      "no_local_history"
+     ],
+     "verdict": "CAUTION"
+    },
+    "job_id": "f7a956cada4b",
+    "price_usd": 0.25,
+    "sku": "agent.prehire-check",
+    "status": 200,
+    "tx_hash": "0xbc62380734ec0481e17df15e8cf2d5a1f95044b1afe2d8f3e71c83482b6f7406"
+   },
+   "reputation": {
+    "deliverable_brief": {
+     "badge": "none",
+     "found": true,
+     "score": 0
+    },
+    "job_id": "be17d3d021a3",
+    "price_usd": 0.01,
+    "sku": "reputation.lookup",
+    "status": 200,
+    "tx_hash": "0x5e70ae2214d02c2255219504e80d9283ec4ebcdd401979d3166eb9c59b530e73"
+   }
+  },
+  "vet_b": {
+   "prehire": {
+    "deliverable_brief": {
+     "red_flags": [
+      "not_audited",
+      "no_delivery_history",
+      "no_local_history"
+     ],
+     "verdict": "CAUTION"
+    },
+    "job_id": "f505986e7788",
+    "price_usd": 0.25,
+    "sku": "agent.prehire-check",
+    "status": 200,
+    "tx_hash": "0x37208c28f05112c9e02cf62203fb6919256fb279c065229b3079875339672c51"
+   },
+   "reputation": {
+    "deliverable_brief": {
+     "badge": "none",
+     "found": true,
+     "score": 0
+    },
+    "job_id": "2c8806a9ac6b",
+    "price_usd": 0.01,
+    "sku": "reputation.lookup",
+    "status": 200,
+    "tx_hash": "0xa9e2373ae98654e00379ac0c9765de94d6900cdad9aba2704cf4fcd64479e2aa"
+   }
+  }
+ }
+}

@@ -1,0 +1,107 @@
+{
+ "agent_a": "sealedbid-agent-a",
+ "agent_b": "sealedbid-agent-b",
+ "evidence_chain": [
+  {
+   "actor": "sealedbid-agent-a",
+   "counterparty": "sealedbid-agent-b",
+   "prehire_tx": null,
+   "prehire_verdict": null,
+   "pubkey": "c151a183da6f5b52a141bbedb55218d048bd09649fe37560459be373913da6c2",
+   "reputation_tx": null,
+   "sig_scheme": "ed25519",
+   "signature": "247ecdf982beceb3d3f8125604e71e1e6897783705b418a1adf5633ea2b793c1d31fac8dde66f456283a33bd186190ac41280f71d5c3189d3b5d09a479461a02",
+   "step_id": "vet_a",
+   "ts": "2026-09-05T22:19:58Z"
+  },
+  {
+   "actor": "sealedbid-agent-b",
+   "counterparty": "sealedbid-agent-a",
+   "prehire_tx": null,
+   "prehire_verdict": null,
+   "prev_sha256": "076ddd6f925dde85794e7bc2c60c9e73a6b52396e0e0c5ff42613bd8227b94e9",
+   "pubkey": "c151a183da6f5b52a141bbedb55218d048bd09649fe37560459be373913da6c2",
+   "reputation_tx": null,
+   "sig_scheme": "ed25519",
+   "signature": "815aea96cb610657c8511858e30c6beca91f6d2229bb19de8fffad7d89f577aee24815f424b3de48a3e058270baf751aa299a608d1c72ceae1ef91c5ba4a6603",
+   "step_id": "vet_b",
+   "ts": "2026-09-05T22:19:58Z"
+  },
+  {
+   "actor": "sealedbid-agent-a",
+   "badge_tx": null,
+   "prev_sha256": "f192eebc93142bae8391f33d5cd326708466bf6553abd80890f5d24999200c98",
+   "pubkey": "c151a183da6f5b52a141bbedb55218d048bd09649fe37560459be373913da6c2",
+   "sig_scheme": "ed25519",
+   "signature": "2893e93588210a3d339fafa085118a59fa15fd655e8afe2043e6cfb6921d53c5c30a31f0e7e57be2c4a03f5870195b085dd9bcbfef4f96bfcd8d780073bebd0d",
+   "step_id": "bracket_open",
+   "ts": "2026-09-05T22:19:58Z"
+  },
+  {
+   "broadcast": true,
+   "clearing_price": null,
+   "commitment_a": "0x3b61ae0a07f804ff26d8231d908a373a630400101de2a293c72e00aba623d792",
+   "commitment_b": "0xe95f2a64372f5de832ae349c063218e535068ab7e0cfbb06d768ea6544c55551",
+   "outcome": "NO_OVERLAP",
+   "prev_sha256": "1ddba8abf564c08b9f115709321afa2b8d4eab74bcd61db8e6d89636b49a9973",
+   "pubkey": "c151a183da6f5b52a141bbedb55218d048bd09649fe37560459be373913da6c2",
+   "run_id": "0xf30aa0c08de9334b2946ac77721d50d5e89cef085d6e255c3c2ea8443be0220a",
+   "settlement_tx": null,
+   "sig_scheme": "ed25519",
+   "signature": "acc30b0e9d1f853097d7a2e1057a50ea5138d4be8c9a35ff49e4620939054846cdc24dc20262cd9715b536e3a199a88cc0cf55a4a5c6b4924939f907994e980d",
+   "step_id": "seal",
+   "ts": "2026-09-05T22:20:16Z"
+  },
+  {
+   "outcome": "NO_OVERLAP",
+   "prev_sha256": "a2a16227a423533b840c1629e75411202f0d59455019dd4630bb68fa24e1a42c",
+   "pubkey": "c151a183da6f5b52a141bbedb55218d048bd09649fe37560459be373913da6c2",
+   "receiver_clearing_micro": null,
+   "sig_scheme": "ed25519",
+   "signature": "7c8e1491d81f6685300d1813d6fa16156e1d80d573d7104e3d132fe4da37b043a5ed52188b0ef9ed6de4d23f1e8dc300e1738fd54e1d2a94738e053d77698a0e",
+   "step_id": "settle_or_abort",
+   "ts": "2026-09-05T22:20:16Z"
+  },
+  {
+   "actor": "sealedbid-agent-a",
+   "counterparty": "sealedbid-agent-b",
+   "prev_sha256": "234556b6c73b2c4e591244905e126138ccfd66142985ed92f66c83e0c93ad40b",
+   "pubkey": "c151a183da6f5b52a141bbedb55218d048bd09649fe37560459be373913da6c2",
+   "reputation_tx": null,
+   "sig_scheme": "ed25519",
+   "signature": "ac0a7fc5f2a7cabac4440bc6aec024c2769d3792dedffb12a9ee238621f01484c8f988a6bf883e4a5fdc305ef466573b1d600ed80a60dfe720ca1a659cc5010f",
+   "step_id": "bracket_close",
+   "ts": "2026-09-05T22:20:16Z"
+  }
+ ],
+ "evidence_chain_verifies": true,
+ "finished": "2026-09-05T22:20:16Z",
+ "run_label": "demo-1788646798",
+ "seal": {
+  "clearing_price": null,
+  "commitment_a": "0x3b61ae0a07f804ff26d8231d908a373a630400101de2a293c72e00aba623d792",
+  "commitment_b": "0xe95f2a64372f5de832ae349c063218e535068ab7e0cfbb06d768ea6544c55551",
+  "exit_code": 0,
+  "outcome": "NO_OVERLAP",
+  "receiver": null,
+  "result_line": "NO_OVERLAP (run: simulation)",
+  "run_id": "0xf30aa0c08de9334b2946ac77721d50d5e89cef085d6e255c3c2ea8443be0220a",
+  "settlement_tx": null
+ },
+ "settle_or_abort": {
+  "outcome": "NO_OVERLAP"
+ },
+ "started": "2026-09-05T22:19:58Z",
+ "steps": {
+  "bracket_close": null,
+  "bracket_open": null,
+  "vet_a": {
+   "prehire": null,
+   "reputation": null
+  },
+  "vet_b": {
+   "prehire": null,
+   "reputation": null
+  }
+ }
+}
