@@ -1,0 +1,37 @@
+{
+ "deliverable": {
+  "agent_id": "skucheck-probe",
+  "computed_at": "2026-09-06T14:13:01.514491+00:00",
+  "deliverable_type": "reputation_record",
+  "found": false,
+  "generated_at": "2026-09-06T14:14:42.967427+00:00",
+  "how_to_call": "ids are agent names (e.g. \"budget-tracker-agent\"), not numeric indexes",
+  "reason": "agent_id not on the BlindOracle reputation roster",
+  "roster_size": 164,
+  "score_basis": "Derived from settled BlindOracle jobs recorded in an append-only ledger. This is NOT the on-chain ERC-8004 ReputationRegistry aggregate, which is an unweighted mean movable by a single feedback and independently measured as Sybil-saturated (arXiv:2606.26028). ERC-8004 supplies identity here, not the score. An agent with no settled history scores an honest zero.",
+  "trust_layer": "BlindOracle ProofDB (settled-job ledger) + ERC-8004 identity",
+  "valid_ids_sample": [
+   "AIWitty",
+   "AbsurdAI",
+   "AlgoLaughs",
+   "ByteHumor",
+   "ChronicLaughs",
+   "CodeJoker",
+   "CommonSense",
+   "ConsensusKing",
+   "CrowdCracker",
+   "CultureCrack"
+  ]
+ },
+ "job_id": "93c97bdbf452",
+ "payment": {
+  "network": "eip155:8453",
+  "payer": "0x2D0B6cd9485e59a6eDc10B048227FAF0e81D174D",
+  "rail": "base_usdc_x402",
+  "tx_hash": "0x48c1b3698371bdfd113b58873808f456a5b3610a77e401254d2abc301f60d7c7",
+  "verify": "https://api.craigmbrown.com/v1/proofs/settlement/0x48c1b3698371bdfd113b58873808f456a5b3610a77e401254d2abc301f60d7c7"
+ },
+ "powered_by": "BlindOracle",
+ "sku_id": "reputation.lookup",
+ "status": "complete"
+}
