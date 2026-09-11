@@ -48,7 +48,7 @@ we state it rather than hide it.
 - **Chainlink CRE** (CLI v1.31.0, `@chainlink/cre-sdk` 1.18.0, TypeScript). `cre.handlerInTee` with a
   Nitro/us-west-2 constraint; one `getSecrets` call for four Vault secrets (a measured runtime limit —
   a second call fails); `usingTheDons().report(...)` with an ABI-encoded attestation; `EVMClient.writeReport`
-  on SETTLE only. 34 bun tests. Measured along the way: `cre workflow simulate --broadcast` writes through
+  on SETTLE only. 34 bun tests. Deployed live to the on-chain registry on 2026-09-11; one DON execution settled through the real Forwarder, the next was refused as a duplicate run. Measured along the way: `cre workflow simulate --broadcast` writes through
   the simulator's own mock forwarder as a placeholder owner, so a receiver built for the production
   Forwarder correctly rejects it — hence two deployed receivers, one per forwarder, documented in EVIDENCE.md.
 - **Solidity / Foundry.** `SealedBidReceiver` implements CRE's `IReceiver`; forwarder-only, optional
@@ -71,10 +71,11 @@ we state it rather than hide it.
 - Evidence (verbatim simulator output, tx hashes, contract reads): `EVIDENCE.md`
 - Receivers on Base Sepolia: production `0xaDF984468f5C7DEeb82FA4c98f25CA3952921ce7`, simulation `0xA2eB7d6EEd6a4d0976cb29B226093E007E720590`
 - Settlement tx: https://sepolia.basescan.org/tx/0x3d241f2b75f53b1e81761991f7e3b6160e2ea6d9a70c31eda2f588cad8521735
+- **Live DON settlement** (production receiver, real CRE Forwarder, workflow `00945180…6ef53` on the mainnet registry): https://sepolia.basescan.org/tx/0x7baefa9ebb15dfd3c9ad4c488e3e2ce558096020f19bb7ef352187c21ce2b2e9
 - A → B transfer: https://sepolia.basescan.org/tx/0x1389bfac88595dddb297c800dc1fafc9d160811466f36ad4de23a41340de9c49
-- Video (108 s, captioned terminal recording of the real run): https://github.com/craigmbrown/ethonline-sealed-bid/releases/download/demo-2026-09-05/demo.mp4
-  — release page https://github.com/craigmbrown/ethonline-sealed-bid/releases/tag/demo-2026-09-05; source cast `evidence/demo.cast`,
-  regenerate with `scripts/render_cast.py`. A narrated screen recording per `docs/VIDEO-SCRIPT.md` can replace it before submission.
+- Video, narrated (120 s, captioned terminal recording of the real run with spoken narration): https://github.com/craigmbrown/ethonline-sealed-bid/releases/download/demo-2026-09-11/demo-narrated.mp4
+  — release page https://github.com/craigmbrown/ethonline-sealed-bid/releases/tag/demo-2026-09-11; silent original at `demo-2026-09-05`;
+  source cast `evidence/demo.cast`, regenerate with `scripts/render_cast.py --narration evidence/narration`.
 
 ## Chainlink prize checklist (from the track page, read 2026-09-04)
 | Requirement | Where |
@@ -83,5 +84,5 @@ we state it rather than hide it.
 | Registers and uses a TEE handler (`handlerInTee`) | `sealed-bid-ts/workflow.ts::initWorkflow` |
 | ≥1 sensitive input processed in-enclave | two reserves + two salts via `getSecrets`; the overlap is an in-enclave intermediate |
 | Not a placeholder | 34 tests, negative controls, on-chain write on SETTLE |
-| Successful execution: CRE CLI simulation or live deploy | verbatim simulator output for all three paths + broadcast writes to Base Sepolia (`EVIDENCE.md`) |
+| Successful execution: CRE CLI simulation or live deploy | **both** — verbatim simulator output for all three paths, and a live `cre workflow deploy` whose DON execution wrote SETTLE to the production receiver through the real Forwarder (`EVIDENCE.md` § 2026-09-11) |
 | Evidence in the submission | `EVIDENCE.md`, `evidence/`, video |

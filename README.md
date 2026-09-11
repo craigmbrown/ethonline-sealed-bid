@@ -57,6 +57,7 @@ Day 2 (2026-09-05), re-verified 2026-09-11 before submission. **Every layer is l
 |---|---|
 | Enclave sealing (`handlerInTee`, one `getSecrets` call, 4 Vault secrets) | `cre workflow simulate` runs for SETTLE / NO_OVERLAP / INVALID_INPUT, verbatim in EVIDENCE.md; 34 tests incl. 3 negative controls |
 | Settlement on Base Sepolia | `SealedBidReceiver` records SETTLE only; tx [`0x3d241f2b…1735`](https://sepolia.basescan.org/tx/0x3d241f2b75f53b1e81761991f7e3b6160e2ea6d9a70c31eda2f588cad8521735); NO_OVERLAP sends no tx; 13 forge tests incl. fuzz |
+| **Live CRE deployment (2026-09-11)** | `sealed-bid-staging` deployed to the on-chain registry (workflow `00945180…6ef53`); the production DON ran `handlerInTee`, read the four Vault secrets, and wrote SETTLE @ 105 to the **production** receiver through the **real** CRE Forwarder — tx [`0x7baefa9e…b2e9`](https://sepolia.basescan.org/tx/0x7baefa9ebb15dfd3c9ad4c488e3e2ce558096020f19bb7ef352187c21ce2b2e9), `settlementCount()=1`; the next tick was refused `RunAlreadySettled`. Paused after the proof. |
 | Agent A pays Agent B | Base Sepolia tx [`0x1389bfac…9c49`](https://sepolia.basescan.org/tx/0x1389bfac88595dddb297c800dc1fafc9d160811466f36ad4de23a41340de9c49), calldata = run id |
 | Third-party bracket (BlindOracle) | 42 real x402 payments, 4 SKUs, $4.02 on Base mainnet, each a USDC transfer verifiable on Basescan; deliverables in `evidence/bo/` |
 | One-command demo | `scripts/demo.py` — both outcomes recorded in `evidence/demo/` |
@@ -101,8 +102,8 @@ python3 scripts/demo.py --buyer-max 90 --seller-min 120 --broadcast --no-pay
 
 `--broadcast` needs `CRE_ETH_PRIVATE_KEY` in a gitignored `.env` (see `.env.sample`) with a little Base Sepolia
 ETH; paid calls need USDC on Base mainnet in the payer wallet. `cre workflow simulate --broadcast` writes through
-the simulator's mock forwarder, so the demo targets the simulation receiver; a live `cre workflow deploy` would
-target the production receiver (`sealed-bid-ts/README.md`).
+the simulator's mock forwarder, so the demo targets the simulation receiver; the live `cre workflow deploy`
+(done 2026-09-11, `EVIDENCE.md`) targets the production receiver (`sealed-bid-ts/README.md`).
 
 ## License
 
