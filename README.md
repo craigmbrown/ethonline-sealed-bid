@@ -60,6 +60,7 @@ Day 2 (2026-09-05), re-verified 2026-09-11 before submission. **Every layer is l
 | Agent A pays Agent B | Base Sepolia tx [`0x1389bfac…9c49`](https://sepolia.basescan.org/tx/0x1389bfac88595dddb297c800dc1fafc9d160811466f36ad4de23a41340de9c49), calldata = run id |
 | Third-party bracket (BlindOracle) | 42 real x402 payments, 4 SKUs, $4.02 on Base mainnet, each a USDC transfer verifiable on Basescan; deliverables in `evidence/bo/` |
 | One-command demo | `scripts/demo.py` — both outcomes recorded in `evidence/demo/` |
+| Process attestation over the run's evidence | hash-chained, **ed25519-signed** bundle (RAP-1 wire format, public key `evidence/signing-key.pub`) bought against a third-party attestation SKU: `conformant`, `signature_binding: attributable` — tx [`0xa562f6f7…a1fc`](https://basescan.org/tx/0xa562f6f727264c49cee661adbc05bbb08d71692ad28b37ecc7f611bcf27a1fc9) |
 
 See `SPEC.md` for the design and task list, `DISCLOSURE.md` for the pre-existing-work and
 AI-assistance statement, `docs/VIDEO-SCRIPT.md` for the demo walkthrough.

@@ -57,7 +57,12 @@ we state it rather than hide it.
 - **x402.** The `x402` Python SDK signs EIP-3009 `TransferWithAuthorization`s; the facilitator settles
   gaslessly. 42 real payments across 4 SKUs during the build ($4.02), every one a USDC transfer on Base mainnet listed in `bo_calls.jsonl`.
 - **Python.** `bo_client.py` (client + the reserve-never-leaves-the-parties rule), `scripts/demo.py`
-  (the whole protocol in one command with hash-chained, HMAC-signed evidence), `scripts/skucheck.py`.
+  (the whole protocol in one command, producing a hash-chained evidence bundle in the RAP-1 wire format,
+  signed with **ed25519** — public key at `evidence/signing-key.pub`; HMAC only as the keyless fallback), `scripts/skucheck.py`.
+- **Process attestation.** The signed bundle is bought against BlindOracle's `security.process-attestation`
+  SKU: `conformant`, `signature_binding: attributable` (tx `0xa562f6f7…a1fc`, USDC on Base mainnet). The first
+  run came back `non_conformant` and is recorded as such in `EVIDENCE.md` — the fix was matching a published
+  wire format and switching to an asymmetric key, not rewording the claim.
 - **AI assistance.** Built with Claude Code from this repository's own SPEC.md, after kick-off, from a
   minimal CLAUDE.md that forbids reading anything outside the repo. See DISCLOSURE.md.
 

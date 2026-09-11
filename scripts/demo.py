@@ -64,7 +64,7 @@ def now_iso() -> str:
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
 
-# ─── Evidence chain (SPEC §2.4): hash-chained, HMAC-signed, tamper-evident ──
+# ─── Evidence chain (SPEC §2.4): hash-chained, ed25519-signed (HMAC fallback), RAP-1 wire format ──
 
 
 def canonical(obj: Any) -> bytes:
