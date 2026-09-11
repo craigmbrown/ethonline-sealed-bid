@@ -413,3 +413,52 @@ $ python3 -m pytest tests -q
 $ cd contracts && forge test        # 13 passed
 $ cd sealed-bid-ts && bun test     # 34 pass
 ```
+
+## 2026-09-11 — pre-submission re-verification (no code changes)
+
+Nothing was built between Sep 7 and Sep 10. Before submission the whole tree was re-run
+and re-counted from its own ledgers; the documentation was corrected to match (payment
+count, spend, test count, signing scheme). Recorded here so "still green at submission"
+is a measurement, not a claim.
+
+### Test suites at this commit
+
+```
+$ cd sealed-bid-ts && bun test
+ 34 pass, 0 fail, 123 expect() calls
+$ cd contracts && forge test
+ 13 tests passed, 0 failed, 0 skipped
+$ python3 -m pytest tests -q
+ 23 passed
+```
+
+### Paid-call ledger, recounted from `bo_calls.jsonl`
+
+| | |
+|---|---|
+| rows | 42 (41 on 2026-09-05, 1 on 2026-09-06) |
+| total | $4.02 USDC on Base mainnet |
+| SKUs | `reputation.lookup` ×20 · `agent.prehire-check` ×12 · `agent.trust-badge` ×7 · `security.process-attestation` ×3 |
+
+Every row carries a `tx_hash`; the deliverable of each call is under `evidence/bo/`.
+
+### Repo hygiene (the plan's two greps)
+
+```
+$ grep -rIn -i "<private predecessor repo and module names>" .   # the name list itself stays out of this repo; excludes DISCLOSURE.md, deps, build output
+(no output)
+$ grep -rIn -E "sk-ant-|0x[0-9a-f]{64}\b" --include=*.py --include=*.ts --include=*.md --include=*.json --include=*.yaml --include=*.sample .
+(only transaction hashes, run ids, commitments and the published ed25519 public key)
+```
+
+### Commit cadence
+
+```
+$ git log --format=%ad --date=short | sort | uniq -c
+      6 2026-09-04
+     16 2026-09-05
+      4 2026-09-06
+```
+
+plus the submission-prep commits of 2026-09-11 (branch `task-10-submission-prep`, merged with a
+merge commit). The Sep 7–10 gap is stated in `docs/CHECKIN-SEP10.md` and in SPEC §6.
