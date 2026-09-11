@@ -51,15 +51,16 @@ suite as negative controls. `SETTLE` necessarily reveals `A_max + B_min`; that t
 
 ## Status
 
-Day 2 (2026-09-05). **Every layer is live and proven with real transactions** (`EVIDENCE.md`):
+Day 2 (2026-09-05), re-verified 2026-09-11 before submission. **Every layer is live and proven with real transactions** (`EVIDENCE.md`):
 
 | Layer | Proof |
 |---|---|
 | Enclave sealing (`handlerInTee`, one `getSecrets` call, 4 Vault secrets) | `cre workflow simulate` runs for SETTLE / NO_OVERLAP / INVALID_INPUT, verbatim in EVIDENCE.md; 34 tests incl. 3 negative controls |
 | Settlement on Base Sepolia | `SealedBidReceiver` records SETTLE only; tx [`0x3d241f2b…1735`](https://sepolia.basescan.org/tx/0x3d241f2b75f53b1e81761991f7e3b6160e2ea6d9a70c31eda2f588cad8521735); NO_OVERLAP sends no tx; 13 forge tests incl. fuzz |
 | Agent A pays Agent B | Base Sepolia tx [`0x1389bfac…9c49`](https://sepolia.basescan.org/tx/0x1389bfac88595dddb297c800dc1fafc9d160811466f36ad4de23a41340de9c49), calldata = run id |
-| Third-party bracket (BlindOracle) | 16 real x402 payments, 4 SKUs, $1.36 on Base mainnet, each a USDC transfer verifiable on Basescan; deliverables in `evidence/bo/` |
+| Third-party bracket (BlindOracle) | 42 real x402 payments, 4 SKUs, $4.02 on Base mainnet, each a USDC transfer verifiable on Basescan; deliverables in `evidence/bo/` |
 | One-command demo | `scripts/demo.py` — both outcomes recorded in `evidence/demo/` |
+| Process attestation over the run's evidence | hash-chained, **ed25519-signed** bundle (RAP-1 wire format, public key `evidence/signing-key.pub`) bought against a third-party attestation SKU: `conformant`, `signature_binding: attributable` — tx [`0xa562f6f7…a1fc`](https://basescan.org/tx/0xa562f6f727264c49cee661adbc05bbb08d71692ad28b37ecc7f611bcf27a1fc9) |
 
 See `SPEC.md` for the design and task list, `DISCLOSURE.md` for the pre-existing-work and
 AI-assistance statement, `docs/VIDEO-SCRIPT.md` for the demo walkthrough.
@@ -74,7 +75,7 @@ bo_client.py              x402-paying client for the public BlindOracle API + th
 scripts/skucheck.py       smoke test that the paid-service path is live (run first, every session)
 bo_calls.jsonl            one row per paid call: sku, price, tx hash, changed_outcome
 evidence/bo/              the deliverable + payment block of every paid call
-tests/test_bo_client.py   11 offline tests incl. the reserve-never-leaves-the-parties rule
+tests/                    23 offline tests: client, the reserve-never-leaves-the-parties rule, demo driver
 scripts/demo.py           end-to-end two-agent demo driver                   (Task 9)
 project.yaml              CRE targets (Base Sepolia settlement; simulation-settings for --broadcast)
 secrets.yaml              secret NAME mapping — no values
@@ -87,7 +88,7 @@ Requires `bun`, Chainlink CRE CLI v1.31.0, Foundry, Python 3.11 (`pip install -r
 ```bash
 cd sealed-bid-ts && bun install && bun test          # 34 tests incl. the no-leak negative controls
 cd contracts && forge test                            # 13 tests incl. a fuzz over the midpoint
-python3 -m pytest tests -q                            # 19 tests: client, evidence rule, demo driver
+python3 -m pytest tests -q                            # 23 tests: client, evidence rule, demo driver
 python3 scripts/skucheck.py                           # is the paid path live right now? (free)
 
 # the whole protocol, free (no BlindOracle calls, no chain write):
