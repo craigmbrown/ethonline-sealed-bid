@@ -55,7 +55,7 @@ we state it rather than hide it.
   pinned workflow owner, SETTLE-only state, ERC-165. 13 forge tests including a fuzz over the midpoint.
 - **Base.** Settlement on Base Sepolia (receiver + the A→B transfer); BlindOracle payments on Base mainnet.
 - **x402.** The `x402` Python SDK signs EIP-3009 `TransferWithAuthorization`s; the facilitator settles
-  gaslessly. 16 real payments across 4 SKUs during the build ($1.36).
+  gaslessly. 42 real payments across 4 SKUs during the build ($4.02), every one a USDC transfer on Base mainnet listed in `bo_calls.jsonl`.
 - **Python.** `bo_client.py` (client + the reserve-never-leaves-the-parties rule), `scripts/demo.py`
   (the whole protocol in one command with hash-chained, HMAC-signed evidence), `scripts/skucheck.py`.
 - **AI assistance.** Built with Claude Code from this repository's own SPEC.md, after kick-off, from a
