@@ -21,6 +21,18 @@ python3 scripts/render_cast.py evidence/demo.cast evidence/demo.mp4 --captions d
 The captions in `docs/VIDEO-CAPTIONS.json` are the narration below, keyed to the `### t=N` markers
 the recording prints. The rendered MP4 is attached to the GitHub release, not committed.
 
+**Narrated version (2026-09-11).** The same cast with the captions spoken over it:
+
+```bash
+python3 scripts/render_cast.py evidence/demo.cast evidence/demo-narrated.mp4 \
+    --captions docs/VIDEO-CAPTIONS.json --narration evidence/narration
+```
+
+`evidence/narration/t0.mp3 … t8.mp3` are text-to-speech renderings of the nine caption strings
+(one clip per marker; the renderer holds each caption at least as long as its clip and mixes the
+clip in at that offset). They are committed so the narrated MP4 is reproducible; they carry no
+evidence of their own. Release: `demo-2026-09-11` (`demo-narrated.mp4`, 119.7 s).
+
 | t | Say | Show |
 |---|---|---|
 | 0:00 | "Two agents want to trade. Each has a private reserve price. Today's agent commerce makes them either reveal it or trust a middleman who sees both. We seal both numbers in a Chainlink CRE confidential workflow instead." | README diagram |

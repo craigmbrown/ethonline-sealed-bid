@@ -6,7 +6,12 @@
 Terminal emulation by `pyte`, frames drawn with Pillow, encoded by ffmpeg. Captions: a JSON list
 of {"marker": "t=3", "text": "..."}; a caption becomes active when a line starting with
 `### <marker>` is printed by the recording (see scripts/record_demo.sh) and stays until the next.
-No screen, no browser, no audio — a reproducible artifact anyone can regenerate from the cast.
+No screen, no browser — a reproducible artifact anyone can regenerate from the cast.
+
+Narration (optional): `--narration evidence/narration` mixes one clip per marker (`t0.mp3` for
+`t=0`, …) into the MP4, and holds each caption on screen at least as long as its clip. The clips
+in the repo were generated from docs/VIDEO-CAPTIONS.json with a text-to-speech service; nothing
+in them is measured evidence — the terminal is.
 """
 
 from __future__ import annotations
@@ -62,7 +67,15 @@ def main() -> int:
     ap.add_argument("--font-size", type=int, default=18)
     ap.add_argument("--max-idle", type=float, default=2.5, help="clamp pauses longer than this (seconds)")
     ap.add_argument("--caption-min", type=float, default=12.0, help="hold each caption on screen at least this long (seconds)")
+    ap.add_argument("--narration", default=None, help="directory of <marker>.mp3 clips (t0.mp3 for t=0); mixed into the MP4")
+    ap.add_argument("--narration-pad", type=float, default=1.0, help="seconds of silence after each clip before the next caption may start")
     args = ap.parse_args()
+    narration: dict[str, tuple[Path, float]] = {}
+    if args.narration:
+        for f in sorted(Path(args.narration).glob("t*.mp3")):
+            dur = float(subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", str(f)],
+                                       capture_output=True, text=True, check=True).stdout.strip())
+            narration[f.stem[0] + "=" + f.stem[1:]] = (f, dur)
 
     header, events = load_cast(Path(args.cast))
     cols, rows = header.get("width", 120), header.get("height", 36)
@@ -89,12 +102,24 @@ def main() -> int:
     if captions:
         is_marker = [kind == "o" and "\n### " in ("\n" + data) for _, kind, data in timeline]
         marks = [i for i, m in enumerate(is_marker) if m]
+        def marker_of(data: str) -> str:
+            for line in data.split("\n"):
+                if line.startswith("### "):
+                    return line[4:].split()[0]
+            return ""
         for a, b in zip(marks, marks[1:] + [len(timeline)]):
             span = (timeline[b][0] if b < len(timeline) else timeline[-1][0] + 2.0) - timeline[a][0]
-            if span < args.caption_min:
-                shift = args.caption_min - span
+            need = args.caption_min
+            if marker_of(timeline[a][2]) in narration:
+                need = max(need, narration[marker_of(timeline[a][2])][1] + args.narration_pad)
+            if span < need:
+                shift = need - span
                 timeline = timeline[:b] + [(t + shift, k, d) for t, k, d in timeline[b:]]
-        timeline.append((timeline[-1][0] + max(0.0, args.caption_min - 2.0), "o", ""))
+        last_need = args.caption_min
+        if marks and marker_of(timeline[marks[-1]][2]) in narration:
+            last_need = max(last_need, narration[marker_of(timeline[marks[-1]][2])][1] + args.narration_pad)
+        timeline.append((timeline[-1][0] + max(0.0, last_need - 2.0), "o", ""))
+        marker_times = {marker_of(timeline[i][2]): timeline[i][0] for i in marks}
     total = timeline[-1][0] + 2.0 if timeline else 1.0
 
     tmp = tempfile.mkdtemp(prefix="cast-")
@@ -130,8 +155,17 @@ def main() -> int:
         if frame_i % (args.fps * 10) == 0:
             print(f"  {t:6.1f}s / {total:.1f}s", file=sys.stderr)
 
-    cmd = ["ffmpeg", "-y", "-loglevel", "error", "-framerate", str(args.fps), "-i", f"{tmp}/f%06d.png",
-           "-c:v", "libx264", "-pix_fmt", "yuv420p", "-vf", "pad=ceil(iw/2)*2:ceil(ih/2)*2", "-crf", "23", args.out]
+    cmd = ["ffmpeg", "-y", "-loglevel", "error", "-framerate", str(args.fps), "-i", f"{tmp}/f%06d.png"]
+    if narration and captions:
+        clips = [(marker_times[m], narration[m][0]) for m in sorted(narration) if m in marker_times]
+        for _, f in clips:
+            cmd += ["-i", str(f)]
+        chains = [f"[{i + 1}:a]adelay={int(start * 1000)}|{int(start * 1000)}[a{i}]" for i, (start, _) in enumerate(clips)]
+        mix = "".join(f"[a{i}]" for i in range(len(clips))) + f"amix=inputs={len(clips)}:normalize=0,apad[aout]"
+        cmd += ["-filter_complex", ";".join(chains + [mix]), "-map", "0:v", "-map", "[aout]",
+                "-c:a", "aac", "-b:a", "128k", "-shortest"]
+        print(f"narration: {len(clips)} clips mixed at their caption offsets")
+    cmd += ["-c:v", "libx264", "-pix_fmt", "yuv420p", "-vf", "pad=ceil(iw/2)*2:ceil(ih/2)*2", "-crf", "23", args.out]
     subprocess.run(cmd, check=True)
     print(f"wrote {args.out}")
     return 0
