@@ -462,3 +462,101 @@ $ git log --format=%ad --date=short | sort | uniq -c
 
 plus the submission-prep commits of 2026-09-11 (branch `task-10-submission-prep`, merged with a
 merge commit). The Sep 7–10 gap is stated in `docs/CHECKIN-SEP10.md` and in SPEC §6.
+
+## 2026-09-11 — Live `cre workflow deploy`: the real DON, the real Forwarder, the production receiver
+
+Until today every on-chain settlement in this file came from `cre workflow simulate --broadcast`,
+which signs through the simulator's mock forwarder into the simulation-only receiver (§Task 6).
+The track qualifications accept simulation, so this step was optional. It was done anyway,
+because it is the one piece of evidence the simulator structurally cannot produce: a report
+signed by the production DON, delivered by the real CRE Forwarder, accepted by the receiver
+that pins the real Forwarder and the real workflow owner.
+
+### Registry (Ethereum mainnet, `0x4Ac54353FA4Fa961AfcC5ec4B118596d3305E7e5`)
+
+| Step | Tx | Cost |
+|---|---|---|
+| free a slot (org cap is 3 on-chain workflows): delete the unrelated, paused `hello-confidential-staging` | [`0x6a9d5666…4b00`](https://etherscan.io/tx/0x6a9d5666c777e8c88802a43b089450ca741f311d5aad146145c75fc63e414b00) | 0.00001131 ETH |
+| `cre secrets create ./secrets.yaml --target=staging-settings` — the 4 Vault secrets, one allowlist tx, values never on chain | [`0x28982dde…b178`](https://etherscan.io/tx/0x28982dde5f700ad1f2ee59999e9c58b5171d20a7e7d30947c382b42479f0b178) | 0.00000676 ETH |
+| `cre workflow deploy ./sealed-bid-ts --target=staging-settings` → workflow `sealed-bid-staging`, ID `00945180745c11e286ebec875a5b012e3ab634f5b05d229612f2ea988ac6ef53`, DON family `zone-a` | [`0x271ccaf5…ffba`](https://etherscan.io/tx/0x271ccaf5bb171ba15a4acde207c177ee36178dc96514868039a72b49f94affba) | 0.00005105 ETH |
+| `cre workflow pause` after the proof (every tick would SETTLE the same fixed reserves) | [`0x38eb9a7b…4501`](https://etherscan.io/tx/0x38eb9a7b9e676cd1a509eeb3880c22d59667ead590ecfc9b30327fee987c4501) | — |
+
+Config deployed: `config.staging.json` — `receiverAddress` = production receiver
+`0xaDF984468f5C7DEeb82FA4c98f25CA3952921ce7`, 1-minute cron, `runLabel: staging`.
+
+### Execution 1 — `4fc0af4a175d65866608f5a38f30b948bf38b1e29ecef6ac59ad287426556e56`, SUCCESS, 20:33:01 → 20:33:19 UTC (18 s)
+
+`cre execution logs …` — identical on every DON node (nodes 1–8 shown in full in the CLI; node 1 here):
+
+```
+[2026-09-11 20:33:18 UTC] [Node 1] enclave: outcome=SETTLE runId=0x162422a54440cb544a415e08c63ac0b7a5bbbdf729f7b20f8ef598859cad35bf
+[2026-09-11 20:33:18 UTC] [Node 1] enclave: commitmentA=0xf480d2b8363fdd84af27c510b9d547a1ce7b10809fa19f027175010a64c86e76 commitmentB=0xc7b8497f0cf5692ebdd67fde032de4147169006736a8906632e7e9c00277aa9e
+[2026-09-11 20:33:18 UTC] [Node 1] settlement: written to 0xaDF984468f5C7DEeb82FA4c98f25CA3952921ce7 tx=0x7baefa9ebb15dfd3c9ad4c488e3e2ce558096020f19bb7ef352187c21ce2b2e9
+```
+
+No reserve value appears in any node's log — the only numbers that cross out of the enclave are
+the commitments and, on chain, the clearing price.
+
+### Verified from Base Sepolia, not from the CLI
+
+```
+$ cast receipt 0x7baefa9ebb15dfd3c9ad4c488e3e2ce558096020f19bb7ef352187c21ce2b2e9 --rpc-url https://sepolia.base.org
+status 1 (success)   block 46695255   gasUsed 216277
+from   0x53617E5AC67920cCDc29678247Da4bCB3eD918f8        (DON transmitter)
+to     0xF8344CFd5c43616a4366C34E3EEE75af79a74482        (the CRE Forwarder — NOT the simulator's mock)
+logs   0xadf98446…1ce7 Settled(...)                      (the production receiver)
+       0xf8344cfd…4482 ReportProcessed ... result=true
+
+$ cast call 0xaDF984468f5C7DEeb82FA4c98f25CA3952921ce7 "FORWARDER()(address)"                --rpc-url https://sepolia.base.org
+0xF8344CFd5c43616a4366C34E3EEE75af79a74482
+$ cast call 0xaDF984468f5C7DEeb82FA4c98f25CA3952921ce7 "EXPECTED_WORKFLOW_OWNER()(address)"  --rpc-url https://sepolia.base.org
+0x2D0B6cd9485e59a6eDc10B048227FAF0e81D174D
+$ cast call 0xaDF984468f5C7DEeb82FA4c98f25CA3952921ce7 "settlementCount()(uint256)"         --rpc-url https://sepolia.base.org
+1
+$ cast call 0xaDF984468f5C7DEeb82FA4c98f25CA3952921ce7 \
+    "getSettlement(bytes32)(uint256,bytes32,bytes32,uint256)" \
+    0x162422a54440cb544a415e08c63ac0b7a5bbbdf729f7b20f8ef598859cad35bf --rpc-url https://sepolia.base.org
+105000000
+0xf480d2b8363fdd84af27c510b9d547a1ce7b10809fa19f027175010a64c86e76
+0xc7b8497f0cf5692ebdd67fde032de4147169006736a8906632e7e9c00277aa9e
+1789158798
+```
+
+Settlement tx on Basescan: https://sepolia.basescan.org/tx/0x7baefa9ebb15dfd3c9ad4c488e3e2ce558096020f19bb7ef352187c21ce2b2e9
+
+So the production receiver — deployed 2026-09-05 pinned to the real Forwarder and the real
+owner, which correctly **rejected** the simulator on 09-05 — has now accepted exactly one report,
+from the DON, at the protocol midpoint 105 for reserves it never saw.
+
+### Execution 2 — the receiver's idempotency, exercised by accident and kept
+
+The cron fired once more (`38cbd07d…fa11`, 20:34:03 UTC, SUCCESS) before the pause landed. Same
+Vault inputs ⇒ same `runId` ⇒ `SealedBidReceiver.onReport` reverted `RunAlreadySettled`:
+
+```
+$ cast receipt 0xfa80d5ee74ff232b61bf47fc807ff46f34b175d7f8d20be23d7a4833f86a7f5c --rpc-url https://sepolia.base.org
+status 1 (success)   block 46695283   to 0xF8344CFd…4482
+logs   0xf8344cfd…4482 ReportProcessed ... result=false     (no Settled event; settlementCount still 1)
+```
+
+The forwarder transaction succeeds while the receiver refuses — the same `txStatus=SUCCESS
+≠ receiver ran` lesson recorded on 09-05, this time in our favour. A run cannot be settled twice.
+No executions after 20:34:03; the workflow is paused.
+
+### What this does and does not add
+
+- **Adds:** the report was produced and signed by the CRE DON, not by a local simulator, and
+  delivered through the Forwarder the receiver was built for. The 09-05 "two receivers" caveat is
+  closed for the production one.
+- **Does not change:** the reserves are fixed Vault values (120 / 90) for this deployment, so
+  every tick settles the same run — hence the pause. A per-trade deployment would carry
+  per-run secrets or an HTTP trigger; out of scope for the event.
+- The workflow is left **PAUSED** on the registry, redeployable from this repo.
+
+### Narrated video
+
+`evidence/demo-narrated.mp4` (119.7 s, h264 + aac) is the same 2026-09-05 terminal recording
+with the caption text spoken over it. The nine clips in `evidence/narration/` were generated
+from `docs/VIDEO-CAPTIONS.json` by a text-to-speech service and are mixed in by
+`scripts/render_cast.py --narration evidence/narration`, which also holds each caption on
+screen for at least its clip's length. The narration adds no evidence; the terminal does.
