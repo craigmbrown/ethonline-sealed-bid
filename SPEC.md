@@ -265,13 +265,13 @@ DISCLOSURE.md                  pre-existing work + AI assistance statement
 
 ## 6. Acceptance criteria
 
-- [ ] ≥ 12 commits spread across Sep 4–13, ≥ 2 on every event day, none before kick-off
-- [ ] `cre workflow simulate` returns `SETTLE` on overlapping bands, `NO_OVERLAP` otherwise
-- [ ] No-leak tests pass and demonstrably fail against a leaky stub
-- [ ] ≥ 3 distinct paid BlindOracle services called for real, with settlement evidence recorded
-- [ ] Settlement executes on Base Sepolia on the `SETTLE` path
-- [ ] `DISCLOSURE.md` accurate; no secret and no private-repo reference in the repo
-- [ ] Submitted before 2026-09-13 16:00 UTC
+- [ ] ≥ 12 commits spread across Sep 4–13, ≥ 2 on every event day, none before kick-off — **partially met**: 26 commits by Sep 6 (6 / 16 / 4), none before kick-off, but **no commits Sep 7–10**; work resumed Sep 11 for submission prep
+- [x] `cre workflow simulate` returns `SETTLE` on overlapping bands, `NO_OVERLAP` otherwise (EVIDENCE.md, all three paths verbatim)
+- [x] No-leak tests pass and demonstrably fail against a leaky stub (two leaky seals kept as negative controls; 34 bun tests)
+- [x] ≥ 3 distinct paid BlindOracle services called for real, with settlement evidence recorded (4 SKUs, 42 calls, $4.02, one tx hash per row in `bo_calls.jsonl`)
+- [x] Settlement executes on Base Sepolia on the `SETTLE` path (simulation receiver, tx `0x6a02d0ca…34c9` and later runs; NO_OVERLAP sends nothing)
+- [x] `DISCLOSURE.md` accurate; no secret and no private-repo reference in the repo (greps re-run 2026-09-11, clean)
+- [ ] Submitted before 2026-09-13 16:00 UTC — form text ready in `docs/SUBMISSION.md`
 
 ## 7. Schedule
 
