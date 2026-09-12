@@ -1,0 +1,14 @@
+# Sep-12 pre-deadline smoke test — skucheck (free, no --paid)
+# run 2026-09-12T13:31:26Z  (deadline 2026-09-13 16:00 UTC)
+
+skucheck against https://api.craigmbrown.com
+  ✓ reputation.lookup                    $0.01
+  ✓ agent.trust-badge                    $0.01
+  ✓ agent.prehire-check                  $0.25
+  ✓ security.process-attestation         $0.25
+  ✓ arbitration.dispute-settlement       $5.0
+  · dispute disclosure: adjudicator=blindoracle_operator_panel neutrality=unilateral
+  ✓ 402 challenge: exact, Base mainnet, amount=10000 (micro-USDC), payTo=0x5E709929A4AB69eC3a8811d03417869059BC4EB9, asset=USDC
+  ✓ proof rail up: 1499 settlements scanned, latest kind 30120
+  ✓ payer 0x2D0B6cd9485e59a6eDc10B048227FAF0e81D174D holds 6.80 USDC on Base; one bracket costs $0.52
+GREEN — the paid path is live
