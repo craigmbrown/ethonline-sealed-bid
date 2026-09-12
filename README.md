@@ -2,6 +2,8 @@
 
 **ETHOnline 2026 · Classic track · Chainlink "Best Confidential Workflow"**
 
+Submitted 2026-09-12 — showcase: https://ethglobal.com/showcase/bo-sealed-bid-79v4s
+
 Two autonomous agents each hold a reserve price. Neither wants to reveal it — not to the
 counterparty, not to the operator, not to a middleman. Today's agent-to-agent commerce forces
 a bad trade: reveal your number, or trust someone who sees both.
