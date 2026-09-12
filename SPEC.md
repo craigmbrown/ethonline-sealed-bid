@@ -271,7 +271,7 @@ DISCLOSURE.md                  pre-existing work + AI assistance statement
 - [x] ≥ 3 distinct paid BlindOracle services called for real, with settlement evidence recorded (4 SKUs, 42 calls, $4.02, one tx hash per row in `bo_calls.jsonl`)
 - [x] Settlement executes on Base Sepolia on the `SETTLE` path (simulation receiver, tx `0x6a02d0ca…34c9` and later runs; NO_OVERLAP sends nothing)
 - [x] `DISCLOSURE.md` accurate; no secret and no private-repo reference in the repo (greps re-run 2026-09-11, clean)
-- [ ] Submitted before 2026-09-13 16:00 UTC — form text ready in `docs/SUBMISSION.md`
+- [x] Submitted before 2026-09-13 16:00 UTC — submitted 2026-09-12 as **BO-Sealed-Bid**, public showcase https://ethglobal.com/showcase/bo-sealed-bid-79v4s
 
 ## 7. Schedule
 
