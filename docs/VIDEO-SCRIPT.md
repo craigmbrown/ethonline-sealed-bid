@@ -25,13 +25,13 @@ the recording prints. The rendered MP4 is attached to the GitHub release, not co
 
 ```bash
 python3 scripts/render_cast.py evidence/demo.cast evidence/demo-narrated.mp4 \
-    --captions docs/VIDEO-CAPTIONS.json --narration evidence/narration
+    --captions docs/VIDEO-CAPTIONS.json --narration evidence/narration --caption-min 15 --narration-pad 2
 ```
 
 `evidence/narration/t0.mp3 … t8.mp3` are text-to-speech renderings of the nine caption strings
 (one clip per marker; the renderer holds each caption at least as long as its clip and mixes the
 clip in at that offset). They are committed so the narrated MP4 is reproducible; they carry no
-evidence of their own. Release: `demo-2026-09-11` (`demo-narrated.mp4`, 119.7 s).
+evidence of their own. Release: `demo-2026-09-11` (`demo-narrated.mp4`, 137 s — ETHGlobal requires > 2 min).
 
 | t | Say | Show |
 |---|---|---|

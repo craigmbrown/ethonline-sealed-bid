@@ -555,7 +555,7 @@ No executions after 20:34:03; the workflow is paused.
 
 ### Narrated video
 
-`evidence/demo-narrated.mp4` (119.7 s, h264 + aac) is the same 2026-09-05 terminal recording
+`evidence/demo-narrated.mp4` (137 s, h264 + aac; `--caption-min 15 --narration-pad 2`) is the same 2026-09-05 terminal recording
 with the caption text spoken over it. The nine clips in `evidence/narration/` were generated
 from `docs/VIDEO-CAPTIONS.json` by a text-to-speech service and are mixed in by
 `scripts/render_cast.py --narration evidence/narration`, which also holds each caption on
