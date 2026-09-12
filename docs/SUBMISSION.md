@@ -73,7 +73,7 @@ we state it rather than hide it.
 - Settlement tx: https://sepolia.basescan.org/tx/0x3d241f2b75f53b1e81761991f7e3b6160e2ea6d9a70c31eda2f588cad8521735
 - **Live DON settlement** (production receiver, real CRE Forwarder, workflow `00945180…6ef53` on the mainnet registry): https://sepolia.basescan.org/tx/0x7baefa9ebb15dfd3c9ad4c488e3e2ce558096020f19bb7ef352187c21ce2b2e9
 - A → B transfer: https://sepolia.basescan.org/tx/0x1389bfac88595dddb297c800dc1fafc9d160811466f36ad4de23a41340de9c49
-- Video, narrated (120 s, captioned terminal recording of the real run with spoken narration): https://github.com/craigmbrown/ethonline-sealed-bid/releases/download/demo-2026-09-11/demo-narrated.mp4
+- Video, narrated (137 s, captioned terminal recording of the real run with spoken narration): https://github.com/craigmbrown/ethonline-sealed-bid/releases/download/demo-2026-09-11/demo-narrated.mp4
   — release page https://github.com/craigmbrown/ethonline-sealed-bid/releases/tag/demo-2026-09-11; silent original at `demo-2026-09-05`;
   source cast `evidence/demo.cast`, regenerate with `scripts/render_cast.py --narration evidence/narration`.
 
